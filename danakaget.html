@@ -1,0 +1,295 @@
+<!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dana Kaget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:'Poppins',sans-serif;
+    }
+
+    body{
+      min-height:100vh;
+      background:linear-gradient(180deg,#0d7dff,#0052cc);
+      overflow:hidden;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      position:fixed;
+      inset:0;
+      color:white;
+      touch-action:none;
+      -webkit-user-select:none;
+      user-select:none;
+    
+    }
+
+    .circle{
+      position:absolute;
+      border-radius:50%;
+      background:rgba(255,255,255,0.08);
+      animation:float 6s infinite ease-in-out;
+    }
+
+    .c1{
+      width:240px;
+      height:240px;
+      top:-70px;
+      left:-70px;
+    }
+
+    .c2{
+      width:180px;
+      height:180px;
+      bottom:-50px;
+      right:-40px;
+      animation-delay:2s;
+    }
+
+    .c3{
+      width:120px;
+      height:120px;
+      top:120px;
+      right:40px;
+      animation-delay:1s;
+    }
+
+    @keyframes float{
+      0%,100%{transform:translateY(0px);}
+      50%{transform:translateY(-15px);}
+    }
+
+    .card{
+      width:94%;
+      max-width:420px;
+      background:rgba(255,255,255,0.14);
+      backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:30px;
+      padding:30px 22px;
+      text-align:center;
+      box-shadow:0 15px 45px rgba(0,0,0,0.25);
+      animation:show 0.6s ease;
+      z-index:2;
+    
+    }
+
+    @keyframes show{
+      from{
+        opacity:0;
+        transform:translateY(20px) scale(0.95);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+      }
+    }
+
+    .logo{
+      width:95px;
+      height:95px;
+      border-radius:30px;
+      background:white;
+      margin:auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#0073ff;
+      font-size:42px;
+      font-weight:700;
+      transform:rotate(-8deg);
+    
+      box-shadow:0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    h1{
+      margin-top:20px;
+      font-size:28px;
+      font-weight:700;
+    }
+
+    .desc{
+      margin-top:10px;
+      font-size:14px;
+      opacity:0.9;
+      line-height:1.6;
+    }
+
+    .saldo{
+      margin:26px 0;
+      padding:18px;
+      border-radius:20px;
+      background:rgba(255,255,255,0.15);
+    }
+
+    .saldo small{
+      font-size:13px;
+      opacity:0.8;
+    }
+
+    .saldo h2{
+      margin-top:5px;
+      font-size:38px;
+      font-weight:700;
+    }
+
+    .btn{
+      width:100%;
+      border:none;
+      padding:15px;
+      border-radius:18px;
+      background:white;
+      color:#0069ff;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+      transition:0.25s;
+    }
+
+    .btn:hover{
+      transform:scale(1.03);
+    }
+
+    .note{
+      margin-top:18px;
+      font-size:12px;
+      opacity:0.7;
+      line-height:1.5;
+    }
+
+    .popup{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      visibility:hidden;
+      opacity:0;
+      transition:0.3s;
+      z-index:10;
+    }
+
+    .popup.active{
+      visibility:visible;
+      opacity:1;
+    }
+
+    .popup-box{
+      width:90%;
+      max-width:330px;
+      background:white;
+      color:#222;
+      border-radius:24px;
+      padding:28px 22px;
+      text-align:center;
+      animation:pop 0.3s ease;
+    }
+
+    @keyframes pop{
+      from{
+        transform:scale(0.8);
+        opacity:0;
+      }
+      to{
+        transform:scale(1);
+        opacity:1;
+      }
+    }
+
+    .popup-box h3{
+      color:#006eff;
+      font-size:24px;
+      margin-bottom:10px;
+    }
+
+    .popup-box p{
+      font-size:14px;
+      line-height:1.6;
+      margin-bottom:18px;
+    }
+
+    .close{
+      border:none;
+      background:#006eff;
+      color:white;
+      padding:12px 18px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:600;
+      width:100%;
+    }
+  </style></head>
+<body>  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+  <div class="circle c3"></div>  <div class="card">
+    <div class="logo">D</div><h1>Dana Kaget</h1>
+
+<div class="desc">
+  Klaim saldo gratis terbatas hari ini <br>
+  Sudah banyak orang berhasil ambil sebelum kehabisan.
+</div>
+
+<div class="saldo">
+  <small>Total Dana Kaget</small>
+  <h2>Rp150.000</h2>
+</div>
+
+<button class="btn" onclick="shareNow()">
+  Ambil Sekarang
+</button>
+
+<div style="margin-top:18px;font-size:13px;opacity:0.9;">
+  Share WhatsApp: <span id="count">0</span>/5
+</div>
+
+<div class="note">
+  Demo landing page giveaway modern.<br>
+  Tidak terhubung ke layanan pembayaran asli.
+</div>
+
+  </div>  <div class="popup" id="popup">
+    <div class="popup-box">
+      <h3>Berhasil </h3>
+      <p>
+        Gift berhasil diklaim.<br>
+      </p>
+      <button class="close" onclick="closePopup()">
+        Tutup
+      </button>
+    </div>
+  </div>  <script>
+    let totalShare = 0;
+
+    function shareNow(){
+      const text = ` DANA KAGET 150RB GRATIS 
+
+Baru cair hari ini dan kuotanya terbatas 
+Masih bisa diklaim sekarang 
+${window.location.href}
+
+Cepetan sebelum link ditutup!`;
+      const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+      window.open(wa,'_blank');
+
+      totalShare++;
+      document.getElementById('count').innerText = totalShare;
+
+      if(totalShare >= 5){
+        setTimeout(()=>{
+          document.getElementById('popup').classList.add('active');
+        },500);
+      }
+    }
+
+    function closePopup(){
+      document.getElementById('popup').classList.remove('active');
+    }
+  </script></body>
+</html>
