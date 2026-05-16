@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="
+width=device-width,
+initial-scale=1.0,
+maximum-scale=1,
+user-scalable=no
+">
+
+<title>CERRO Loading</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#000;
+}
+
+/* CONTAINER */
+.container{
+    position:relative;
+    width:100%;
+    height:100dvh;
+    overflow:hidden;
+    background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+    background-size: 200% 200%;
+    animation: pulseBg 8s ease infinite;
+}
+
+@keyframes pulseBg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* VIDEO (Urutan paling bawah setelah background container) */
+#bgVideo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1; /* Paling belakang */
+    filter: brightness(.55) saturate(1.15);
+}
+
+/* OVERLAY (Di atas video) */
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2; 
+    background: linear-gradient(to bottom, rgba(0,0,0,.15), rgba(0,0,0,.80));
+}
+
+/* LIGHT EFFECT (Di atas overlay) */
+.light {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    z-index: 3; 
+    background: radial-gradient(circle, rgba(255,255,255,.08), transparent 60%);
+    animation: rotate 16s linear infinite;
+}
+
+@keyframes rotate{
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+/* PARTICLES (Di atas efek lampu) */
+.particle{
+    position:absolute;
+    width:3px;
+    height:3px;
+    border-radius:50%;
+    background:#fff;
+    opacity:.4;
+    z-index: 4; /* Ditambahkan biar ga ketutup video */
+    animation: float linear infinite;
+}
+
+@keyframes float{
+    from{
+        transform: translateY(100vh) scale(0);
+        opacity:0;
+    }
+    20%{
+        opacity:.5;
+    }
+    to{
+        transform: translateY(-10vh) scale(1);
+        opacity:0;
+    }
+}
+
+/* TOPBAR & BOTTOMBAR (Paling Depan) */
+.topbar, .bottom {
+    position:absolute;
+    z-index: 5;
+}
+
+.topbar {
+    top:0;
+    left:0;
+    width:100%;
+    padding:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* LOGO */
+.logo{
+    color:#fff;
+    font-size:22px;
+    font-weight:bold;
+    letter-spacing:5px;
+    text-shadow: 0 0 12px rgba(255,255,255,.5), 0 0 30px rgba(255,255,255,.3);
+    animation: logoIn 1.4s cubic-bezier(.17,.89,.32,1.28);
+}
+
+/* SKIP */
+.skip{
+    border:none;
+    outline:none;
+    color:#fff;
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:14px;
+    cursor:pointer;
+    background: rgba(255,255,255,.10);
+    backdrop-filter:blur(12px);
+    transition:.25s;
+    box-shadow: 0 0 15px rgba(255,255,255,.08);
+    animation: skipIn 1.5s cubic-bezier(.17,.89,.32,1.28);
+}
+
+.skip:active{
+    transform:scale(.95);
+}
+
+.bottom{
+    left:50%;
+    bottom:42px;
+    transform:translateX(-50%);
+    width:88%;
+    max-width:520px;
+    animation: bottomIn 1.7s cubic-bezier(.17,.89,.32,1.28);
+}
+
+/* TEXT */
+.loadingText{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+    color:#fff;
+    font-size:13px;
+}
+
+/* BAR */
+.bar{
+    width:100%;
+    height:8px;
+    border-radius:999px;
+    overflow:hidden;
+    background: rgba(255,255,255,.10);
+    backdrop-filter:blur(10px);
+}
+
+/* PROGRESS */
+.progress{
+    width:0%;
+    height:100%;
+    border-radius:999px;
+    background: linear-gradient(90deg, #ffffff, #d1d1d1, #ffffff);
+    background-size:300% 100%;
+    animation: shine 2s linear infinite;
+    box-shadow: 0 0 15px rgba(255,255,255,.45);
+}
+
+@keyframes shine{
+    from{ background-position:0% 0%; }
+    to{ background-position:300% 0%; }
+}
+
+@keyframes logoIn{
+    0%{ opacity:0; transform: translateX(-250px) rotate(-20deg) scale(.6); }
+    70%{ opacity:1; }
+    100%{ opacity:1; transform: translateX(0) rotate(0deg) scale(1); }
+}
+
+@keyframes skipIn{
+    0%{ opacity:0; transform: translateX(250px) rotate(20deg) scale(.6); }
+    70%{ opacity:1; }
+    100%{ opacity:1; transform: translateX(0) rotate(0deg) scale(1); }
+}
+
+@keyframes bottomIn{
+    0%{ opacity:0; transform: translate(-50%,180px) scale(.8); }
+    70%{ opacity:1; }
+    100%{ opacity:1; transform: translate(-50%,0) scale(1); }
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <video
+    id="bgVideo"
+    autoplay
+    muted
+    loop
+    playsinline
+    webkit-playsinline
+    x5-playsinline
+    preload="auto">
+        <source src="wall.mp4" type="video/mp4">
+        <source src="file:///android_asset/bc.mp4" type="video/mp4">
+    </video>
+
+    <div class="overlay"></div>
+    <div class="light"></div>
+
+    <div class="particle" style="left:10%; animation-duration:10s;"></div>
+    <div class="particle" style="left:25%; animation-duration:7s;"></div>
+    <div class="particle" style="left:40%; animation-duration:11s;"></div>
+    <div class="particle" style="left:58%; animation-duration:9s;"></div>
+    <div class="particle" style="left:72%; animation-duration:13s;"></div>
+    <div class="particle" style="left:90%; animation-duration:8s;"></div>
+
+    <div class="topbar">
+        <div class="logo">CERRO</div>
+        <button class="skip" onclick="goMain()">Skip</button>
+    </div>
+
+    <div class="bottom">
+        <div class="loadingText">
+            <span>Loading Experience</span>
+            <span id="percent">0%</span>
+        </div>
+        <div class="bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+const video = document.getElementById("bgVideo");
+const progress = document.getElementById("progress");
+const percent = document.getElementById("percent");
+let load = 0;
+
+/* FORCE PLAY VIDEO */
+async function startVideo(){
+    try{
+        video.muted = true;
+        await video.play();
+    }catch(e){
+        console.log("Video Error:", e);
+    }
+}
+
+window.addEventListener("load", () => {
+    startVideo();
+});
+
+document.body.addEventListener("touchstart", () => {
+    video.muted = false;
+    video.play().catch(err => console.log(err));
+}, { once:true });
+
+/* LOADING TRACKER */
+const loading = setInterval(() => {
+    load++;
+    progress.style.width = load + "%";
+    percent.innerText = load + "%";
+
+    if(load >= 100){
+        clearInterval(loading);
+        document.body.style.opacity = "0";
+        document.body.style.transition = ".7s";
+
+        setTimeout(() => {
+            window.location.href = "bug.html";
+        }, 700);
+    }
+}, 45);
+
+function goMain(){
+    document.body.style.opacity = "0";
+    document.body.style.transition = ".6s";
+
+    setTimeout(() => {
+        window.location.href = "bug.html";
+    }, 600);
+}
+
+</script>
+
+</body>
+</html>

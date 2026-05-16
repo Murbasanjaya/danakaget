@@ -193,7 +193,7 @@ function handleAuthSubmit(e) {
                 localStorage.setItem("userName", "newro");
                 localStorage.setItem("userRole", "OWNER");
 
-                setTimeout(() => { window.location.href = "bug.html"; }, 1000);
+                setTimeout(() => { window.location.href = "loading.html"; }, 1000);
                 return;
             }
 
@@ -208,7 +208,7 @@ function handleAuthSubmit(e) {
                 localStorage.setItem("userName", foundUser.username);
                 localStorage.setItem("userRole", foundUser.role); // Pasti PREMIUM
 
-                setTimeout(() => { window.location.href = "bug.html"; }, 1000);
+                setTimeout(() => { window.location.href = "loading.html"; }, 1000);
             } else {
                 msg.style.color = "#666";
                 msg.innerText = "ACCESS DENIED: Username/Password Salah!";
