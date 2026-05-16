@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>NEXORAIN SYSTEM - AUTHENTICATE</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin: 0; padding: 0; box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+body {
+    width: 100%; height: 100vh; background: #050505; color: #fff;
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden; position: relative;
+}
+#bgVideo {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover; z-index: 0; pointer-events: none;
+    filter: grayscale(100%) brightness(23%) contrast(110%);
+}
+.grid {
+    position: absolute; inset: 0; z-index: 1; opacity: .4;
+    background-image: linear-gradient(rgba(255, 255, 255, .02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .02) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+.login-container {
+    position: relative; z-index: 5; width: 92%; max-width: 400px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px;
+    padding: 30px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+}
+.login-header { text-align: center; margin-bottom: 24px; }
+.login-header h2 { font-size: 24px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; }
+.login-header p { font-size: 11px; color: #888; letter-spacing: 1px; margin-top: 4px; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; color: #aaa; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+
+.input-style {
+    width: 100%; padding: 14px 16px; background: #111113;
+    border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px;
+    color: #fff; font-size: 13px; outline: none; transition: all 0.25s;
+}
+.input-style:focus { border-color: rgba(255, 255, 255, 0.3); background: #151518; }
+
+.btn-auth {
+    width: 100%; padding: 15px; background: #ffffff; color: #000;
+    border: none; border-radius: 14px; font-size: 13px; font-weight: 800;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer; margin-top: 10px;
+    transition: all 0.25s; box-shadow: 0 4px 20px rgba(255,255,255,0.1);
+}
+.btn-auth:hover { background: #e5e5e5; transform: translateY(-1px); }
+
+.switch-mode-text {
+    text-align: center; font-size: 12px; color: #777; margin-top: 16px;
+}
+.switch-mode-text a {
+    color: #fff; text-decoration: none; font-weight: 600; cursor: pointer;
+}
+.switch-mode-text a:hover { text-decoration: underline; }
+
+#statusMsg { text-align: center; font-size: 11px; margin-top: 14px; font-weight: 600; letter-spacing: 0.5px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop playsinline id="bgVideo">
+    <source src="wall.mp4" type="video/mp4">
+</video>
+<div class="grid"></div>
+
+<div class="login-container">
+    <div class="login-header">
+        <h2 id="formTitle">LOGIN SYSTEM</h2>
+        <p id="formDesc">Enter your Nexorain panel credentials</p>
+    </div>
+
+    <form id="authForm" onsubmit="handleAuthSubmit(event)">
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="userInput" class="input-style" placeholder="Masukkan nama..." required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="passInput" class="input-style" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-auth" id="btnAuth">Sign In</button>
+        
+        <div class="switch-mode-text" id="switchContainer">
+            Belum punya akun? <a onclick="toggleMode(true)">Daftar disini</a>
+        </div>
+        
+        <div id="statusMsg"></div>
+    </form>
+</div>
+
+<script>
+let isRegisterMode = false;
+
+// Fungsi ganti halaman Login / Register tanpa reload
+function toggleMode(toRegister) {
+    isRegisterMode = toRegister;
+    const title = document.getElementById('formTitle');
+    const desc = document.getElementById('formDesc');
+    const btn = document.getElementById('btnAuth');
+    const switchBox = document.getElementById('switchContainer');
+    const msg = document.getElementById('statusMsg');
+    
+    msg.innerText = ""; // reset pesan error
+    
+    if (isRegisterMode) {
+        title.innerText = "REGISTER SYSTEM";
+        desc.innerText = "Create new account to get Premium role";
+        btn.innerText = "Create Account";
+        switchBox.innerHTML = `Sudah punya akun? <a onclick="toggleMode(false)">Login disini</a>`;
+    } else {
+        title.innerText = "LOGIN SYSTEM";
+        desc.innerText = "Enter your Nexorain panel credentials";
+        btn.innerText = "Sign In";
+        switchBox.innerHTML = `Belum punya akun? <a onclick="toggleMode(true)">Daftar disini</a>`;
+    }
+}
+
+function handleAuthSubmit(e) {
+    e.preventDefault();
+    const user = document.getElementById('userInput').value.trim();
+    const pass = document.getElementById('passInput').value.trim();
+    const msg = document.getElementById('statusMsg');
+    const btn = document.getElementById('btnAuth');
+
+    // Ambil database akun lokal yang sudah terdaftar dari localStorage
+    let registeredUsers = JSON.parse(localStorage.getItem("localDB_Users")) || [];
+
+    if (isRegisterMode) {
+        // --- PROSES REGISTER ---
+        btn.disabled = true;
+        btn.innerText = "REGISTERING...";
+        msg.style.color = "#888";
+        msg.innerText = "Saving data to security vault...";
+
+        setTimeout(() => {
+            // Cek apakah username sudah ada yang punya
+            const userExist = registeredUsers.some(u => u.username.toLowerCase() === user.toLowerCase());
+            
+            if (userExist || user.toLowerCase() === "newro") {
+                msg.style.color = "#ff4444";
+                msg.innerText = "ERROR: Username sudah digunakan!";
+                btn.disabled = false;
+                btn.innerText = "Create Account";
+                return;
+            }
+
+            // Daftarkan user baru, otomatis di-set PREMIUM sesuai request bray!
+            registeredUsers.push({
+                username: user,
+                password: pass,
+                role: "PREMIUM"
+            });
+
+            localStorage.setItem("localDB_Users", JSON.stringify(registeredUsers));
+
+            msg.style.color = "#ffffff";
+            msg.innerText = "REGISTER SUCCESS! Mengalihkan ke login...";
+            
+            setTimeout(() => {
+                toggleMode(false); // balikkan ke mode login
+                btn.disabled = false;
+                document.getElementById('passInput').value = "";
+            }, 1200);
+
+        }, 1000);
+
+    } else {
+        // --- PROSES LOGIN ---
+        btn.disabled = true;
+        btn.innerText = "VERIFYING...";
+        msg.style.color = "#888";
+        msg.innerText = "Checking secure handshake...";
+
+        setTimeout(() => {
+            // 1. Cek Akun Khusus Hardcode Owner (User: newro, Pw: murba@11)
+            if (user === "newro" && pass === "murba@11") {
+                msg.style.color = "#ffffff";
+                msg.innerText = "OWNER ACCESS GRANTED. Redirecting...";
+                
+                localStorage.setItem("isAuth", "true");
+                localStorage.setItem("userName", "newro");
+                localStorage.setItem("userRole", "OWNER");
+
+                setTimeout(() => { window.location.href = "bug.html"; }, 1000);
+                return;
+            }
+
+            // 2. Cek Akun yang Terdaftar Hasil dari Register Tadi
+            const foundUser = registeredUsers.find(u => u.username === user && u.password === pass);
+
+            if (foundUser) {
+                msg.style.color = "#ffffff";
+                msg.innerText = "ACCESS GRANTED. Redirecting...";
+                
+                localStorage.setItem("isAuth", "true");
+                localStorage.setItem("userName", foundUser.username);
+                localStorage.setItem("userRole", foundUser.role); // Pasti PREMIUM
+
+                setTimeout(() => { window.location.href = "bug.html"; }, 1000);
+            } else {
+                msg.style.color = "#666";
+                msg.innerText = "ACCESS DENIED: Username/Password Salah!";
+                btn.disabled = false;
+                btn.innerText = "Sign In";
+            }
+        }, 1200);
+    }
+}
+</script>
+</body>
+</html>
