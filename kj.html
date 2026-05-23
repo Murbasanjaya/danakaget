@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk ke Login</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 10px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 1060px; 
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+        background: #ffffff;
+        border-radius: 32px;
+        padding: 40px 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        overflow: hidden;
+    }
+
+    .header-section {
+        text-align: center;
+        max-width: 650px;
+        margin: 25px auto 25px;
+    }
+
+    .logo {
+        width: 80px;
+        height: 80px;
+        background: #000;
+        color: #fff;
+        border-radius: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
+        font-size: 36px;
+        font-weight: 800;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+        margin-top: 20px;
+        font-size: 28px;
+        font-weight: 800;
+        color: #111;
+        letter-spacing: -0.5px;
+        text-align: center;
+    }
+
+    .desc {
+        color: #666;
+        margin-top: 12px;
+        line-height: 1.6;
+        font-size: 14px;
+        text-align: center; 
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .btn-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin: 30px 0;
+    }
+
+    .btn {
+        width: 100%;
+        max-width: 340px;
+        height: 56px;
+        border: none;
+        border-radius: 18px;
+        background: #000;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .btn:hover:not(:disabled) {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 25px rgba(0,0,0,0.25);
+        background: #1a1a1a;
+    }
+
+    /* Style khusus saat tombol sedang terkunci countdown */
+    .btn:disabled {
+        background: #cccccc;
+        color: #666666;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    /* --- LAYOUT ZONA IKLAN --- */
+    .ads-zone {
+        padding: 10px 0;
+        width: 100%;
+    }
+
+    .ads-zone-top {
+        border-bottom: 1px dashed #e2e2e2;
+        margin-bottom: 20px;
+    }
+
+    .ads-zone-bottom {
+        border-top: 1px dashed #e2e2e2;
+        margin-top: 10px;
+    }
+
+    .ads-scroll-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 5px 0;
+    }
+
+    .ads-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .ads-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 470px); 
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .ad-box {
+        width: 100%;
+        min-height: 75px;
+        background: #f8f9fa;
+        border: 1px solid #eee;
+        border-radius: 14px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 5px;
+        transition: 0.3s;
+    }
+
+    .ad-box iframe {
+        width: 468px !important;
+        max-width: 100% !important;
+    }
+
+    .ad-box:hover {
+        background: #fff;
+        border-color: #ddd;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    .footer {
+        text-align: center;
+        margin-top: 35px;
+        color: #aaa;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    @media(max-width: 980px) {
+        .ads-grid {
+            justify-content: flex-start;
+            padding-left: 5px;
+        }
+    }
+
+    @media(max-width: 480px) {
+        .card {
+            padding: 30px 15px;
+        }
+        h1 { font-size: 24px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        
+        <div class="ads-zone ads-zone-top">
+            <div class="ads-scroll-container">
+                <div class="ads-grid">
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-section">
+            <div class="logo">S</div>
+            <h1>Masuk ke Login</h1>
+            <div class="desc">
+                Sistem otentikasi aman. Silakan verifikasi identitas Anda untuk melanjutkan akses ke dalam dashboard.
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="btn" id="loginBtn" onclick="goLogin()" disabled>
+                TUNGGU 10 DETIK...
+            </button>
+        </div>
+
+        <div class="ads-zone ads-zone-bottom">
+            <div class="ads-scroll-container">
+                <div class="ads-grid">
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                    <div class="ad-box">
+                        <script>
+                        atOptions = { 'key' : '9668390eb723832ee0a8032a6c0a58d7', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                        </script>
+                        <script src="https://www.highperformanceformat.com/9668390eb723832ee0a8032a6c0a58d7/invoke.js"></script>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Protected Access Interface
+        </div>
+
+    </div>
+</div>
+
+<script>
+// SISTEM COUNTDOWN TIMER 10 DETIK
+let timeLeft = 10;
+const loginBtn = document.getElementById("loginBtn");
+
+const countdown = setInterval(function() {
+    timeLeft--;
+    if (timeLeft > 0) {
+        loginBtn.innerText = "TUNGGU " + timeLeft + " DETIK...";
+    } else {
+        clearInterval(countdown);
+        loginBtn.innerText = "LANJUTKAN LOGIN";
+        loginBtn.removeAttribute("disabled"); // Mengaktifkan tombol kembali
+    }
+}, 1000);
+
+function goLogin(){
+    window.location.href = "https://1.link-in.live/login";
+}
+</script>
+
+</body>
+</html>
