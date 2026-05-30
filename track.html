@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> TRACKER</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; font-family:'Share Tech Mono','Courier New',monospace; }
+        video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); z-index:1; }
+        canvas { position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; pointer-events:none; }
+        .overlay-start { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; gap:24px; }
+        .overlay-title { color:#fff; font-size:clamp(10px,2vw,14px); letter-spacing:8px; opacity:0.4; animation:blink 3s infinite; }
+        .overlay-logo  { color:#fff; font-size:clamp(20px,5vw,40px); letter-spacing:6px; text-shadow:0 0 30px rgba(255,255,255,0.4); }
+        .overlay-div   { width:140px; height:1px; background:rgba(255,255,255,0.25); }
+        .btn-start { background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.6); padding:13px 34px; font-size:11px; letter-spacing:4px; font-family:'Share Tech Mono',monospace; cursor:pointer; transition:background .2s,box-shadow .2s; }
+        .btn-start:hover { background:rgba(255,255,255,0.07); box-shadow:0 0 20px rgba(255,255,255,0.12); }
+        .overlay-sub { color:rgba(255,255,255,0.2); font-size:9px; letter-spacing:3px; }
+        @keyframes blink { 0%,100%{opacity:.4} 50%{opacity:.1} }
+    </style>
+</head>
+<body>
+
+<div id="overlay-ijin" class="overlay-start">
+    <div class="overlay-title">v3.0 — ASCII FUSION SYSTEM</div>
+    <div class="overlay-logo">CYBER TRACKER</div>
+    <div class="overlay-div"></div>
+    <button id="aktifkan-sensor" class="btn-start">[ INITIALIZE SYSTEM ]</button>
+    <div class="overlay-sub">HAND TRACKING &middot; FUSION GLITCH &middot; ASCII ART &middot; MATRIX</div>
+</div>
+
+<video id="webcam" playsinline muted></video>
+<canvas id="canvas-grafis"></canvas>
+
+<script>
+const video    = document.getElementById('webcam');
+const canvas   = document.getElementById('canvas-grafis');
+const ctx      = canvas.getContext('2d');
+const btnStart = document.getElementById('aktifkan-sensor');
+const overlay  = document.getElementById('overlay-ijin');
+
+let frameCount = 0;
+let isFused    = false;
+let particles  = [];
+const MAX_P    = 300;
+
+// ASCII art source - braille dari "txt 4"
+const ASCII_ART_SOURCE = [
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠖⠃⠀⠀⠀⡁⠀⠀⠀⠀⠀⠐⠆⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⢔⡤⠊⠁⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠁⠀⠀⠘⠁⢀⠀⠀⠀⠀⢈⠓⠂⠠⡄⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⠿⠞⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠒⠁⠀⠠⡚⠁⢀⣙⣀⣈⡩⠬⢁⠀⢑⠶⠤⡆⠤⡀⠀⠀⠀⠀⠀⢀⠴⢲⣋⣽⣷⠟⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⢠⠀⠀⣶⠃⠗⣡⣶⣮⣿⡿⠿⠿⢿⣿⣷⣶⣤⣤⠤⠴⠦⠬⣤⣤⠄⣉⠉⠝⢲⣿⡷⠻⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠁⡀⡸⠁⣰⣿⡿⠛⠋⣁⡀⠤⠤⢄⡀⠈⠛⢯⣿⣟⣾⣶⣶⣮⣭⣵⣾⣿⣟⠿⠉⢨⠖⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠀⢠⠳⡧⣻⡿⠋⢀⠒⠉⠀⠀⠀⠀⠀⠀⠉⠢⠀⠀⠙⠛⣻⣿⣿⣿⢿⣿⣿⠟⡱⠖⠊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⢠⣧⠓⣾⣿⠁⠀⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⢦⣠⣾⣿⠿⣿⣿⣿⡿⣫⠏⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠂⢃⣸⣿⠇⢠⠃⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣿⠟⢿⠁⠸⡿⣿⣯⡶⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⢘⡄⠘⣿⣿⠀⠸⡀⠀⠀⠀⢀⣀⣴⣾⣿⡿⡟⡋⠐⡇⠀⢸⣿⣿⠃⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢡⠘⢰⣿⡿⡆⠀⣇⠀⣀⣠⣤⣶⣿⢷⢟⠻⠀⠈⠀⠀⠀⡇⠀⣼⣿⣿⠂⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⢀⡴⢯⣾⠟⡏⢀⣠⣿⣿⣿⣟⢟⡋⠅⠘⠉⠀⠀⠀⠀⢀⠀⠁⢠⣿⣟⠃⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠞⣻⣷⡿⢙⣩⣶⡿⠿⠛⠉⠑⢡⡁⠀⠀⠀⠀⠀⢀⠔⠁⠀⣰⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠀⠀⠀⣡⣾⣥⣾⢫⡦⠾⠛⠙⠉⠀⢀⣀⠀⠈⠙⠓⠦⠤⠤⠀⠘⠁⢀⡤⣾⡿⠏⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⠀⠀⠀⠀⠀⠔⣴⣾⣿⣿⢟⢝⠢⠃⢀⣤⢴⣾⣮⣷⣶⢿⣶⡤⣐⡀⠀⣠⣤⢶⣪⣿⣿⡿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⠀⡀⣦⣾⡿⡛⠵⠺⢈⡠⠶⠿⠥⠥⡭⠉⠉⢱⡛⠻⠿⣿⣿⣿⣿⣿⠿⠿⠿⠟⠭⠛⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⢀⢴⠕⣋⠝⠕⠐⠀⠔⠉⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠁⠉⠁⠁⠁⠁⠈⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+  "⣠⠁⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+];
+
+function generateAsciiFrames(source) {
+    const clean = source.map(line => line.replace(/\u2800/g, ' '));
+    const frame0 = clean.map(line => line.replace(/[^ ]/g, '0'));
+    const frame1 = clean.map(line => line.replace(/[^ ]/g, '1'));
+    return [frame0, frame1];
+}
+
+const ASCII_FRAMES = generateAsciiFrames(ASCII_ART_SOURCE);
+let asciiFrame = 0;
+setInterval(function() { asciiFrame = asciiFrame === 0 ? 1 : 0; }, 500);
+
+// Tracking posisi tangan untuk deteksi diam
+let prevHandPos = [null, null]; // [x,y] untuk tangan 0 dan tangan 1
+
+function spawnParticle(cx, cy) {
+    if (particles.length >= MAX_P) return;
+    let speed = isFused ? 9 : 4;
+    let angle = Math.random() * Math.PI * 2;
+    let life  = isFused ? Math.random()*25+15 : Math.random()*35+25;
+    particles.push({
+        x: cx + (Math.random()*40-20),
+        y: cy + (Math.random()*40-20),
+        vx: Math.cos(angle)*speed*(Math.random()*0.7+0.5),
+        vy: Math.sin(angle)*speed*(Math.random()*0.7+0.5) + (isFused ? 0 : 0.8),
+        text: Math.random()>0.5 ? "1" : "0",
+        life: life, maxLife: life
+    });
+}
+
+btnStart.onclick = function() { overlay.style.display='none'; initSystem(); };
+function resizeCanvas() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+
+function initSystem() {
+    resizeCanvas();
+    const handsAI = new Hands({ locateFile: function(f){ return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + f; } });
+    handsAI.setOptions({ maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+    handsAI.onResults(onHandResults);
+    new Camera(video, { onFrame: async function(){ await handsAI.send({image:video}); }, width:640, height:480, facingMode:'user' }).start();
+}
+
+function drawAsciiOnHand(hX, hY, hW, hH) {
+    ctx.save();
+    var lines = ASCII_FRAMES[asciiFrame];
+    // Ukuran font lebih besar agar jelas
+    var fontSize = Math.max(8, Math.floor(hW / 40)); // perkiraan lebar gambar 40 karakter
+    var lineH = fontSize * 1.2;
+    var totalH = lines.length * lineH;
+
+    var boxX = hX;
+    var boxY = hY - totalH - 20;
+    var boxW = hW;
+    var boxH = totalH + 14;
+
+    if (boxY < 5) boxY = hY + hH + 10;
+    if (boxX < 5) boxX = 5;
+    if (boxX + boxW > canvas.width - 5) boxX = canvas.width - boxW - 5;
+
+    // Hapus background hitam (tidak ada fillRect)
+    // Border dan karakter dengan efek glitch (cyan + getaran acak)
+    var bc = '#00ffcc'; // tetap cyan, tidak ungu
+    var glitchOffsetX = (isFused && Math.random() > 0.7) ? (Math.random()*6-3) : 0;
+    var glitchOffsetY = (isFused && Math.random() > 0.7) ? (Math.random()*6-3) : 0;
+
+    ctx.strokeStyle = bc;
+    ctx.lineWidth   = isFused ? 3 : 1.5;
+    ctx.strokeRect(boxX + glitchOffsetX, boxY + glitchOffsetY, boxW, boxH);
+
+    // Sudut dekoratif (cyan)
+    var cl=10, ct=2;
+    ctx.fillStyle = bc;
+    ctx.fillRect(boxX+glitchOffsetX,boxY+glitchOffsetY,cl,ct);
+    ctx.fillRect(boxX+glitchOffsetX,boxY+glitchOffsetY,ct,cl);
+    ctx.fillRect(boxX+boxW-cl+glitchOffsetX,boxY+glitchOffsetY,cl,ct);
+    ctx.fillRect(boxX+boxW-ct+glitchOffsetX,boxY+glitchOffsetY,ct,cl);
+    ctx.fillRect(boxX+glitchOffsetX,boxY+boxH-ct+glitchOffsetY,cl,ct);
+    ctx.fillRect(boxX+glitchOffsetX,boxY+boxH-cl+glitchOffsetY,ct,cl);
+    ctx.fillRect(boxX+boxW-cl+glitchOffsetX,boxY+boxH-ct+glitchOffsetY,cl,ct);
+    ctx.fillRect(boxX+boxW-ct+glitchOffsetX,boxY+boxH-cl+glitchOffsetY,ct,cl);
+
+    ctx.font = fontSize + "px 'Share Tech Mono', monospace";
+    var charW = fontSize * 0.60;
+
+    for (var i=0; i<lines.length; i++) {
+        var line = lines[i];
+        var y = boxY + 8 + i * lineH + fontSize + glitchOffsetY;
+        var gx = (isFused && Math.random() > 0.82) ? (Math.random()*8-4) : 0;
+        for (var ci=0; ci<line.length; ci++) {
+            var ch = line[ci];
+            if (ch === '1') {
+                ctx.fillStyle = 'rgba(0,255,200,0.95)';
+            } else if (ch === '0') {
+                ctx.fillStyle = 'rgba(0,180,140,0.65)';
+            } else {
+                continue; // spasi transparan
+            }
+            // efek glitch tambahan: offset per karakter kecil
+            var charGlitchX = (isFused && Math.random() > 0.9) ? (Math.random()*4-2) : 0;
+            ctx.fillText(ch, boxX + 6 + ci * charW + gx + charGlitchX, y);
+        }
+    }
+    ctx.restore();
+}
+
+function onHandResults(results) {
+    frameCount++;
+
+    var shakeX = isFused ? (Math.random()*12-6) : 0;
+    var shakeY = isFused ? (Math.random()*12-6) : 0;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
+    var videoW = (results.image ? (results.image.videoWidth||0) : 0) || video.videoWidth || 640;
+    var videoH = (results.image ? (results.image.videoHeight||0) : 0) || video.videoHeight || 480;
+    var videoRatio = videoW / videoH;
+    var canRatio   = canvas.width / canvas.height;
+    var renderW, renderH, offsetX, offsetY;
+    if (canRatio > videoRatio) {
+        renderW = canvas.width; renderH = canvas.width / videoRatio;
+        offsetX = 0; offsetY = (canvas.height - renderH) / 2;
+    } else {
+        renderW = canvas.height * videoRatio; renderH = canvas.height;
+        offsetX = (canvas.width - renderW) / 2; offsetY = 0;
+    }
+
+    var detectedBoxes     = [];
+    var currentHandPoints = [];
+    var openHandBoxes     = [];
+
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (var hi=0; hi<results.multiHandLandmarks.length; hi++) {
+            var landmarks = results.multiHandLandmarks[hi];
+
+            var xMin=canvas.width, xMax=0, yMin=canvas.height, yMax=0;
+            for (var li=0; li<landmarks.length; li++) {
+                var pt = landmarks[li];
+                var px = offsetX + ((1-pt.x)*renderW);
+                var py = offsetY + (pt.y*renderH);
+                if (px<xMin) xMin=px; if (px>xMax) xMax=px;
+                if (py<yMin) yMin=py; if (py>yMax) yMax=py;
+            }
+
+            var PAD  = 28;
+            var size = Math.max((xMax-xMin)+PAD*2, (yMax-yMin)+PAD*2);
+            var cX   = xMin + (xMax-xMin)/2;
+            var cY   = yMin + (yMax-yMin)/2;
+            var hX   = cX - size/2;
+            var hY   = cY - size/2;
+
+            currentHandPoints.push({x:cX, y:cY});
+            detectedBoxes.push({x:hX, y:hY, w:size, h:size, handInfo: {}});
+
+            // gestur buka/tutup
+            var j8 = landmarks[8], j5 = landmarks[5];
+            var dist = Math.sqrt(Math.pow(j8.x-j5.x,2) + Math.pow(j8.y-j5.y,2));
+            var isOpen = dist > 0.08;
+
+            // deteksi tangan terbuka lebar
+            var wrist = landmarks[0];
+            var tips  = [landmarks[4],landmarks[8],landmarks[12],landmarks[16],landmarks[20]];
+            var avgD  = 0;
+            for (var ti=0; ti<tips.length; ti++) {
+                avgD += Math.sqrt(Math.pow(tips[ti].x-wrist.x,2) + Math.pow(tips[ti].y-wrist.y,2));
+            }
+            avgD /= 5;
+            var isFullOpen = avgD > 0.22;
+
+            detectedBoxes[hi].handInfo = { isFullOpen, isOpen, hX, hY, size };
+
+            // Warna border tangan: putih (bukan ungu)
+            var col = isFused ? '#ffffff' : '#ffffff';
+            var lw  = isFused ? 4 : 2.5;
+
+            if (!isOpen) {
+                ctx.strokeStyle = col; ctx.lineWidth = lw;
+                ctx.strokeRect(hX, hY, size, size);
+                var len=16, thk=4;
+                ctx.fillStyle = col;
+                ctx.fillRect(hX,hY,len,thk);
+                ctx.fillRect(hX,hY,thk,len);
+                ctx.fillRect(hX+size-len,hY,len,thk);
+                ctx.fillRect(hX+size-thk,hY,thk,len);
+                ctx.fillRect(hX,hY+size-thk,len,thk);
+                ctx.fillRect(hX,hY+size-len,thk,len);
+                ctx.fillRect(hX+size-len,hY+size-thk,len,thk);
+                ctx.fillRect(hX+size-thk,hY+size-len,thk,len);
+            } else {
+                var layers = isFused ? 4 : 3;
+                for (var li2=0; li2<layers; li2++) {
+                    var off   = (li2*12) + Math.sin(frameCount*0.5)*4;
+                    var alpha = 1 - li2*0.28;
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(255,255,255,'+alpha+')';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(hX-off, hY-off, size+off*2, size+off*2);
+                    ctx.restore();
+                }
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(hX-15,cY); ctx.lineTo(hX+size+15,cY);
+                ctx.moveTo(cX,hY-15); ctx.lineTo(cX,hY+size+15);
+                ctx.stroke();
+            }
+
+            // HUD info (putih)
+            var hudW=110, hudH=34, hudX=hX+size+15, hudY=hY;
+            if (hudX+hudW > canvas.width-10) hudX = hX-hudW-15;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(hudX, hudY, hudW, hudH);
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(hudX, hudY, hudW, hudH);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px monospace';
+            ctx.fillText('X: ' + Math.round(cX), hudX+8, hudY+13);
+            ctx.fillText('Y: ' + Math.round(cY), hudX+8, hudY+25);
+        }
+
+        // Deteksi tangan diam: cek pergerakan tangan kedua (indeks 1) jika ada
+        if (currentHandPoints.length >= 2) {
+            let hand0Still = false, hand1Still = false;
+            // Update prev pos untuk kedua tangan (jika ada)
+            if (prevHandPos[0] && currentHandPoints[0]) {
+                let dx = currentHandPoints[0].x - prevHandPos[0].x;
+                let dy = currentHandPoints[0].y - prevHandPos[0].y;
+                if (Math.sqrt(dx*dx+dy*dy) < 20) hand0Still = true;
+            }
+            if (prevHandPos[1] && currentHandPoints[1]) {
+                let dx = currentHandPoints[1].x - prevHandPos[1].x;
+                let dy = currentHandPoints[1].y - prevHandPos[1].y;
+                if (Math.sqrt(dx*dx+dy*dy) < 20) hand1Still = true;
+            }
+
+            // Cek kondisi: satu tangan terbuka lebar, tangan lain diam
+            // Tangan 0 terbuka & tangan 1 diam -> tampilkan di tangan 0
+            if (detectedBoxes[0] && detectedBoxes[0].handInfo.isFullOpen && hand1Still) {
+                openHandBoxes.push({x: detectedBoxes[0].x, y: detectedBoxes[0].y, w: detectedBoxes[0].w, h: detectedBoxes[0].h});
+            }
+            // Tangan 1 terbuka & tangan 0 diam -> tampilkan di tangan 1
+            if (detectedBoxes[1] && detectedBoxes[1].handInfo.isFullOpen && hand0Still) {
+                openHandBoxes.push({x: detectedBoxes[1].x, y: detectedBoxes[1].y, w: detectedBoxes[1].w, h: detectedBoxes[1].h});
+            }
+
+            // Simpan posisi
+            prevHandPos[0] = {x: currentHandPoints[0].x, y: currentHandPoints[0].y};
+            prevHandPos[1] = {x: currentHandPoints[1].x, y: currentHandPoints[1].y};
+        } else {
+            // Reset jika tidak ada dua tangan
+            prevHandPos = [null, null];
+        }
+    } else {
+        prevHandPos = [null, null];
+    }
+
+    // Fusion detection (dua tangan berdekatan)
+    isFused = false;
+    if (detectedBoxes.length === 2) {
+        var b1=detectedBoxes[0], b2=detectedBoxes[1];
+        var overlap     = b1.x < b2.x+b2.w && b1.x+b1.w > b2.x && b1.y < b2.y+b2.h && b1.y+b1.h > b2.y;
+        var closeEnough = Math.abs((b1.x+b1.w/2)-(b2.x+b2.w/2)) < 200;
+        isFused = overlap || closeEnough;
+    }
+
+    // Particles (warna cyan jika fusion, putih normal)
+    for (var di=0; di<detectedBoxes.length; di++) {
+        var b   = detectedBoxes[di];
+        var emit = isFused ? 16 : 5;
+        for (var k=0; k<emit; k++) spawnParticle(b.x+b.w/2, b.y+b.h/2);
+    }
+
+    ctx.save();
+    ctx.font = 'bold ' + (isFused?16:12) + 'px monospace';
+    for (var p=particles.length-1; p>=0; p--) {
+        var particle = particles[p];
+        particle.x += particle.vx; particle.y += particle.vy; particle.life--;
+        var gx2 = Math.random()>0.92 ? Math.random()*16-8 : 0;
+        if (Math.random()>0.95) particle.text = particle.text==="1"?"0":"1";
+        var prog = particle.life / particle.maxLife;
+        // Partikel tidak ungu
+        ctx.fillStyle = isFused ? 'rgba(0,255,200,'+prog+')' : 'rgba(255,255,255,'+prog+')';
+        ctx.fillText(particle.text, particle.x+gx2, particle.y);
+        if (particle.life<=0) particles.splice(p,1);
+    }
+    ctx.restore();
+
+    // Glitch scanlines (efek glitch lebih intens saat fusion)
+    if (isFused && frameCount%2===0) {
+        ctx.fillStyle = 'rgba(0,255,200,0.1)';
+        ctx.fillRect(0, Math.random()*canvas.height, canvas.width, Math.random()*14+6);
+        if (Math.random()>0.5) {
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            ctx.fillRect(0, Math.random()*canvas.height, canvas.width, 2);
+        }
+        // Chromatic aberration palsu
+        ctx.save();
+        ctx.globalAlpha = 0.1;
+        ctx.drawImage(canvas, 2, 0);
+        ctx.drawImage(canvas, -2, 0);
+        ctx.restore();
+    }
+
+    // Gambar ASCII art (tanpa background hitam, tanpa ungu)
+    for (var oi=0; oi<openHandBoxes.length; oi++) {
+        var ob = openHandBoxes[oi];
+        drawAsciiOnHand(ob.x, ob.y, ob.w, ob.h);
+    }
+
+    // Garis penghubung dual-hand (putih, efek dash saat non-fusion, glitch saat fusion)
+    if (currentHandPoints.length === 2) {
+        var hp1=currentHandPoints[0], hp2=currentHandPoints[1];
+        ctx.save();
+        if (isFused) {
+            var lc2 = Math.floor(Math.random()*5)+2;
+            for (var g=0; g<lc2; g++) {
+                var gOff = (g - lc2/2) * 9;
+                ctx.lineWidth = Math.random()*3+1;
+                // Garis glitch putih bukan ungu
+                ctx.strokeStyle = 'rgba(255,255,255,'+(Math.random()*0.8+0.2)+')';
+                ctx.beginPath();
+                ctx.moveTo(hp1.x+gOff, hp1.y+gOff);
+                ctx.lineTo(hp2.x+gOff, hp2.y+gOff);
+                ctx.stroke();
+            }
+        } else {
+            ctx.strokeStyle='#ffffff'; ctx.lineWidth=2;
+            ctx.setLineDash([12,10,4,10]);
+            ctx.lineDashOffset = -frameCount*2;
+            ctx.beginPath(); ctx.moveTo(hp1.x,hp1.y); ctx.lineTo(hp2.x,hp2.y); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        var mx=(hp1.x+hp2.x)/2, my=(hp1.y+hp2.y)/2;
+        ctx.fillStyle = isFused ? '#00ffcc' : '#ffffff'; // fusion titik tengah cyan
+        ctx.beginPath(); ctx.arc(mx, my, isFused?6:4, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth=1; ctx.beginPath(); ctx.arc(mx, my, isFused?14:10, 0, Math.PI*2); ctx.stroke();
+        ctx.restore();
+    }
+
+    // Fusion banner (putih, bukan ungu)
+    if (isFused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,255,200,0.15)'; // cyan transparan
+        ctx.fillRect(0, canvas.height/2-20, canvas.width, 40);
+        ctx.strokeStyle = 'rgba(0,255,200,0.4)';
+        ctx.lineWidth=1;
+        ctx.strokeRect(0, canvas.height/2-20, canvas.width, 40);
+        if (frameCount%4 !== 0) {
+            ctx.fillStyle = '#00ffcc';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('[ FUSION MODE ACTIVE — DUAL HAND LOCK ]', canvas.width/2, canvas.height/2+4);
+            ctx.textAlign = 'left';
+        }
+        ctx.restore();
+    }
+
+    // Bottom HUD
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = '8px monospace';
+    ctx.fillText('FRAME: ' + frameCount, 14, canvas.height-30);
+    ctx.fillText('HANDS: ' + detectedBoxes.length + '  |  PARTICLES: ' + particles.length + '  |  FUSION: ' + (isFused?'ON':'OFF') + '  |  ASCII: ' + asciiFrame, 14, canvas.height-18);
+    ctx.restore();
+
+    ctx.restore();
+}
+</script>
+</body>
+</html>
