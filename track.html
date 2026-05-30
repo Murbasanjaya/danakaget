@@ -1,11 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> TRACKER</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI CYBER FUSION TRACKER</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
@@ -47,9 +45,9 @@ const overlay  = document.getElementById('overlay-ijin');
 let frameCount = 0;
 let isFused    = false;
 let particles  = [];
-const MAX_P    = 300;
+const MAX_P    = 180;
 
-// ASCII art source - braille dari "txt 4"
+// ASCII art source
 const ASCII_ART_SOURCE = [
   "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
   "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
@@ -81,96 +79,109 @@ function generateAsciiFrames(source) {
 
 const ASCII_FRAMES = generateAsciiFrames(ASCII_ART_SOURCE);
 let asciiFrame = 0;
-setInterval(function() { asciiFrame = asciiFrame === 0 ? 1 : 0; }, 500);
+setInterval(() => { asciiFrame = asciiFrame === 0 ? 1 : 0; }, 500);
 
-// Tracking posisi tangan untuk deteksi diam
-let prevHandPos = [null, null]; // [x,y] untuk tangan 0 dan tangan 1
+// Warna acak monokrom (hitam, putih, abu-abu) untuk efek glitch
+function randomMonochromeColor() {
+    const v = Math.floor(Math.random() * 256); // 0-255
+    return `rgb(${v},${v},${v})`; // grayscale
+}
+
+let currentGlitchColor = randomMonochromeColor();
+setInterval(() => {
+    currentGlitchColor = randomMonochromeColor();
+}, 100);
 
 function spawnParticle(cx, cy) {
     if (particles.length >= MAX_P) return;
-    let speed = isFused ? 9 : 4;
+    let speed = isFused ? 12 : 5;
     let angle = Math.random() * Math.PI * 2;
-    let life  = isFused ? Math.random()*25+15 : Math.random()*35+25;
+    let life  = isFused ? Math.random()*20+10 : Math.random()*30+20;
     particles.push({
-        x: cx + (Math.random()*40-20),
-        y: cy + (Math.random()*40-20),
-        vx: Math.cos(angle)*speed*(Math.random()*0.7+0.5),
-        vy: Math.sin(angle)*speed*(Math.random()*0.7+0.5) + (isFused ? 0 : 0.8),
+        x: cx + (Math.random()*30-15),
+        y: cy + (Math.random()*30-15),
+        vx: Math.cos(angle)*speed*(Math.random()*0.6+0.4),
+        vy: Math.sin(angle)*speed*(Math.random()*0.6+0.4) + (isFused ? 0 : 0.6),
         text: Math.random()>0.5 ? "1" : "0",
         life: life, maxLife: life
     });
 }
 
-btnStart.onclick = function() { overlay.style.display='none'; initSystem(); };
+btnStart.onclick = () => { overlay.style.display='none'; initSystem(); };
 function resizeCanvas() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
 window.addEventListener('resize', resizeCanvas);
 
 function initSystem() {
     resizeCanvas();
-    const handsAI = new Hands({ locateFile: function(f){ return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + f; } });
-    handsAI.setOptions({ maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+    const handsAI = new Hands({
+        locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+    });
+    handsAI.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
     handsAI.onResults(onHandResults);
-    new Camera(video, { onFrame: async function(){ await handsAI.send({image:video}); }, width:640, height:480, facingMode:'user' }).start();
+    new Camera(video, {
+        onFrame: async () => { await handsAI.send({image: video}); },
+        width: 640,
+        height: 480,
+        facingMode: 'user'
+    }).start();
 }
 
 function drawAsciiOnHand(hX, hY, hW, hH) {
     ctx.save();
-    var lines = ASCII_FRAMES[asciiFrame];
-    // Ukuran font lebih besar agar jelas
-    var fontSize = Math.max(8, Math.floor(hW / 40)); // perkiraan lebar gambar 40 karakter
-    var lineH = fontSize * 1.2;
-    var totalH = lines.length * lineH;
+    const lines = ASCII_FRAMES[asciiFrame];
+    const fontSize = Math.max(8, Math.floor(hW / 45));
+    const lineH = fontSize * 1.15;
+    const totalH = lines.length * lineH;
 
-    var boxX = hX;
-    var boxY = hY - totalH - 20;
-    var boxW = hW;
-    var boxH = totalH + 14;
+    let boxX = hX;
+    let boxY = hY - totalH - 20;
+    const boxW = hW;
+    const boxH = totalH + 14;
 
     if (boxY < 5) boxY = hY + hH + 10;
     if (boxX < 5) boxX = 5;
     if (boxX + boxW > canvas.width - 5) boxX = canvas.width - boxW - 5;
 
-    // Hapus background hitam (tidak ada fillRect)
-    // Border dan karakter dengan efek glitch (cyan + getaran acak)
-    var bc = '#00ffcc'; // tetap cyan, tidak ungu
-    var glitchOffsetX = (isFused && Math.random() > 0.7) ? (Math.random()*6-3) : 0;
-    var glitchOffsetY = (isFused && Math.random() > 0.7) ? (Math.random()*6-3) : 0;
+    // Warna dasar: putih jika normal, atau warna monokrom acak jika fusion
+    const baseColor = isFused ? currentGlitchColor : '#ffffff';
+    const glitchOffsetX = (isFused && Math.random() > 0.6) ? (Math.random()*8-4) : 0;
+    const glitchOffsetY = (isFused && Math.random() > 0.6) ? (Math.random()*8-4) : 0;
 
-    ctx.strokeStyle = bc;
-    ctx.lineWidth   = isFused ? 3 : 1.5;
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = isFused ? 2.5 : 1.5;
     ctx.strokeRect(boxX + glitchOffsetX, boxY + glitchOffsetY, boxW, boxH);
 
-    // Sudut dekoratif (cyan)
-    var cl=10, ct=2;
-    ctx.fillStyle = bc;
-    ctx.fillRect(boxX+glitchOffsetX,boxY+glitchOffsetY,cl,ct);
-    ctx.fillRect(boxX+glitchOffsetX,boxY+glitchOffsetY,ct,cl);
-    ctx.fillRect(boxX+boxW-cl+glitchOffsetX,boxY+glitchOffsetY,cl,ct);
-    ctx.fillRect(boxX+boxW-ct+glitchOffsetX,boxY+glitchOffsetY,ct,cl);
-    ctx.fillRect(boxX+glitchOffsetX,boxY+boxH-ct+glitchOffsetY,cl,ct);
-    ctx.fillRect(boxX+glitchOffsetX,boxY+boxH-cl+glitchOffsetY,ct,cl);
-    ctx.fillRect(boxX+boxW-cl+glitchOffsetX,boxY+boxH-ct+glitchOffsetY,cl,ct);
-    ctx.fillRect(boxX+boxW-ct+glitchOffsetX,boxY+boxH-cl+glitchOffsetY,ct,cl);
+    // Sudut dekoratif
+    const cl = 10, ct = 2;
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(boxX+glitchOffsetX, boxY+glitchOffsetY, cl, ct);
+    ctx.fillRect(boxX+glitchOffsetX, boxY+glitchOffsetY, ct, cl);
+    ctx.fillRect(boxX+boxW-cl+glitchOffsetX, boxY+glitchOffsetY, cl, ct);
+    ctx.fillRect(boxX+boxW-ct+glitchOffsetX, boxY+glitchOffsetY, ct, cl);
+    ctx.fillRect(boxX+glitchOffsetX, boxY+boxH-ct+glitchOffsetY, cl, ct);
+    ctx.fillRect(boxX+glitchOffsetX, boxY+boxH-cl+glitchOffsetY, ct, cl);
+    ctx.fillRect(boxX+boxW-cl+glitchOffsetX, boxY+boxH-ct+glitchOffsetY, cl, ct);
+    ctx.fillRect(boxX+boxW-ct+glitchOffsetX, boxY+boxH-cl+glitchOffsetY, ct, cl);
 
-    ctx.font = fontSize + "px 'Share Tech Mono', monospace";
-    var charW = fontSize * 0.60;
+    ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
+    const charW = fontSize * 0.58;
 
-    for (var i=0; i<lines.length; i++) {
-        var line = lines[i];
-        var y = boxY + 8 + i * lineH + fontSize + glitchOffsetY;
-        var gx = (isFused && Math.random() > 0.82) ? (Math.random()*8-4) : 0;
-        for (var ci=0; ci<line.length; ci++) {
-            var ch = line[ci];
-            if (ch === '1') {
-                ctx.fillStyle = 'rgba(0,255,200,0.95)';
-            } else if (ch === '0') {
-                ctx.fillStyle = 'rgba(0,180,140,0.65)';
-            } else {
-                continue; // spasi transparan
-            }
-            // efek glitch tambahan: offset per karakter kecil
-            var charGlitchX = (isFused && Math.random() > 0.9) ? (Math.random()*4-2) : 0;
-            ctx.fillText(ch, boxX + 6 + ci * charW + gx + charGlitchX, y);
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const y = boxY + 8 + i * lineH + fontSize + glitchOffsetY;
+        const gx = (isFused && Math.random() > 0.8) ? (Math.random()*6-3) : 0;
+        for (let ci = 0; ci < line.length; ci++) {
+            const ch = line[ci];
+            if (ch === ' ') continue;
+            // Warna karakter: mengikuti baseColor (monokrom saat fusion)
+            ctx.fillStyle = (ch === '1') ? baseColor : (isFused ? 'rgba(128,128,128,0.7)' : '#cccccc');
+            const charGlitchX = (isFused && Math.random() > 0.9) ? (Math.random()*4-2) : 0;
+            ctx.fillText(ch, boxX + 5 + ci * charW + gx + charGlitchX, y);
         }
     }
     ctx.restore();
@@ -179,94 +190,95 @@ function drawAsciiOnHand(hX, hY, hW, hH) {
 function onHandResults(results) {
     frameCount++;
 
-    var shakeX = isFused ? (Math.random()*12-6) : 0;
-    var shakeY = isFused ? (Math.random()*12-6) : 0;
+    // Getaran layar hanya saat fusion
+    const shakeX = isFused ? (Math.random()*12-6) : 0;
+    const shakeY = isFused ? (Math.random()*12-6) : 0;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(shakeX, shakeY);
 
-    var videoW = (results.image ? (results.image.videoWidth||0) : 0) || video.videoWidth || 640;
-    var videoH = (results.image ? (results.image.videoHeight||0) : 0) || video.videoHeight || 480;
-    var videoRatio = videoW / videoH;
-    var canRatio   = canvas.width / canvas.height;
-    var renderW, renderH, offsetX, offsetY;
+    const videoW = (results.image?.videoWidth) || video.videoWidth || 640;
+    const videoH = (results.image?.videoHeight) || video.videoHeight || 480;
+    const videoRatio = videoW / videoH;
+    const canRatio = canvas.width / canvas.height;
+    let renderW, renderH, offsetX, offsetY;
     if (canRatio > videoRatio) {
-        renderW = canvas.width; renderH = canvas.width / videoRatio;
-        offsetX = 0; offsetY = (canvas.height - renderH) / 2;
+        renderW = canvas.width;
+        renderH = canvas.width / videoRatio;
+        offsetX = 0;
+        offsetY = (canvas.height - renderH) / 2;
     } else {
-        renderW = canvas.height * videoRatio; renderH = canvas.height;
-        offsetX = (canvas.width - renderW) / 2; offsetY = 0;
+        renderW = canvas.height * videoRatio;
+        renderH = canvas.height;
+        offsetX = (canvas.width - renderW) / 2;
+        offsetY = 0;
     }
 
-    var detectedBoxes     = [];
-    var currentHandPoints = [];
-    var openHandBoxes     = [];
+    const detectedBoxes = [];
+    const currentHandPoints = [];
+    const openHandBoxes = [];
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        for (var hi=0; hi<results.multiHandLandmarks.length; hi++) {
-            var landmarks = results.multiHandLandmarks[hi];
+        for (let hi = 0; hi < results.multiHandLandmarks.length; hi++) {
+            const landmarks = results.multiHandLandmarks[hi];
 
-            var xMin=canvas.width, xMax=0, yMin=canvas.height, yMax=0;
-            for (var li=0; li<landmarks.length; li++) {
-                var pt = landmarks[li];
-                var px = offsetX + ((1-pt.x)*renderW);
-                var py = offsetY + (pt.y*renderH);
-                if (px<xMin) xMin=px; if (px>xMax) xMax=px;
-                if (py<yMin) yMin=py; if (py>yMax) yMax=py;
+            let xMin = canvas.width, xMax = 0, yMin = canvas.height, yMax = 0;
+            for (let li = 0; li < landmarks.length; li++) {
+                const pt = landmarks[li];
+                const px = offsetX + ((1 - pt.x) * renderW);
+                const py = offsetY + (pt.y * renderH);
+                if (px < xMin) xMin = px;
+                if (px > xMax) xMax = px;
+                if (py < yMin) yMin = py;
+                if (py > yMax) yMax = py;
             }
 
-            var PAD  = 28;
-            var size = Math.max((xMax-xMin)+PAD*2, (yMax-yMin)+PAD*2);
-            var cX   = xMin + (xMax-xMin)/2;
-            var cY   = yMin + (yMax-yMin)/2;
-            var hX   = cX - size/2;
-            var hY   = cY - size/2;
+            const PAD = 28;
+            const size = Math.max((xMax - xMin) + PAD*2, (yMax - yMin) + PAD*2);
+            const cX = xMin + (xMax - xMin)/2;
+            const cY = yMin + (yMax - yMin)/2;
+            const hX = cX - size/2;
+            const hY = cY - size/2;
 
-            currentHandPoints.push({x:cX, y:cY});
-            detectedBoxes.push({x:hX, y:hY, w:size, h:size, handInfo: {}});
+            currentHandPoints.push({x: cX, y: cY});
+            detectedBoxes.push({x: hX, y: hY, w: size, h: size});
 
-            // gestur buka/tutup
-            var j8 = landmarks[8], j5 = landmarks[5];
-            var dist = Math.sqrt(Math.pow(j8.x-j5.x,2) + Math.pow(j8.y-j5.y,2));
-            var isOpen = dist > 0.08;
+            const j8 = landmarks[8], j5 = landmarks[5];
+            const dist = Math.hypot(j8.x - j5.x, j8.y - j5.y);
+            const isOpen = dist > 0.08;
 
-            // deteksi tangan terbuka lebar
-            var wrist = landmarks[0];
-            var tips  = [landmarks[4],landmarks[8],landmarks[12],landmarks[16],landmarks[20]];
-            var avgD  = 0;
-            for (var ti=0; ti<tips.length; ti++) {
-                avgD += Math.sqrt(Math.pow(tips[ti].x-wrist.x,2) + Math.pow(tips[ti].y-wrist.y,2));
-            }
+            const wrist = landmarks[0];
+            const tips = [4,8,12,16,20].map(i => landmarks[i]);
+            let avgD = 0;
+            tips.forEach(tip => avgD += Math.hypot(tip.x - wrist.x, tip.y - wrist.y));
             avgD /= 5;
-            var isFullOpen = avgD > 0.22;
+            // Threshold tetap rendah agar mudah muncul
+            const isFullOpen = avgD > 0.15;
 
-            detectedBoxes[hi].handInfo = { isFullOpen, isOpen, hX, hY, size };
+            detectedBoxes[hi].isFullOpen = isFullOpen;
 
-            // Warna border tangan: putih (bukan ungu)
-            var col = isFused ? '#ffffff' : '#ffffff';
-            var lw  = isFused ? 4 : 2.5;
+            // Gambar border tangan (putih)
+            const col = '#ffffff';
+            const lw = isFused ? 4 : 2.5;
 
             if (!isOpen) {
-                ctx.strokeStyle = col; ctx.lineWidth = lw;
+                ctx.strokeStyle = col;
+                ctx.lineWidth = lw;
                 ctx.strokeRect(hX, hY, size, size);
-                var len=16, thk=4;
+                const len = 16, thk = 4;
                 ctx.fillStyle = col;
-                ctx.fillRect(hX,hY,len,thk);
-                ctx.fillRect(hX,hY,thk,len);
-                ctx.fillRect(hX+size-len,hY,len,thk);
-                ctx.fillRect(hX+size-thk,hY,thk,len);
-                ctx.fillRect(hX,hY+size-thk,len,thk);
-                ctx.fillRect(hX,hY+size-len,thk,len);
-                ctx.fillRect(hX+size-len,hY+size-thk,len,thk);
-                ctx.fillRect(hX+size-thk,hY+size-len,thk,len);
+                ctx.fillRect(hX, hY, len, thk); ctx.fillRect(hX, hY, thk, len);
+                ctx.fillRect(hX+size-len, hY, len, thk); ctx.fillRect(hX+size-thk, hY, thk, len);
+                ctx.fillRect(hX, hY+size-thk, len, thk); ctx.fillRect(hX, hY+size-len, thk, len);
+                ctx.fillRect(hX+size-len, hY+size-thk, len, thk); ctx.fillRect(hX+size-thk, hY+size-len, thk, len);
             } else {
-                var layers = isFused ? 4 : 3;
-                for (var li2=0; li2<layers; li2++) {
-                    var off   = (li2*12) + Math.sin(frameCount*0.5)*4;
-                    var alpha = 1 - li2*0.28;
+                const layers = isFused ? 4 : 3;
+                for (let li2 = 0; li2 < layers; li2++) {
+                    const off = (li2*12) + Math.sin(frameCount*0.5)*4;
+                    const alpha = 1 - li2*0.28;
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(255,255,255,'+alpha+')';
+                    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
                     ctx.lineWidth = 1.5;
                     ctx.strokeRect(hX-off, hY-off, size+off*2, size+off*2);
                     ctx.restore();
@@ -274,14 +286,15 @@ function onHandResults(results) {
                 ctx.strokeStyle = 'rgba(255,255,255,0.3)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(hX-15,cY); ctx.lineTo(hX+size+15,cY);
-                ctx.moveTo(cX,hY-15); ctx.lineTo(cX,hY+size+15);
+                ctx.moveTo(hX-15, cY); ctx.lineTo(hX+size+15, cY);
+                ctx.moveTo(cX, hY-15); ctx.lineTo(cX, hY+size+15);
                 ctx.stroke();
             }
 
-            // HUD info (putih)
-            var hudW=110, hudH=34, hudX=hX+size+15, hudY=hY;
-            if (hudX+hudW > canvas.width-10) hudX = hX-hudW-15;
+            // HUD kecil
+            const hudW = 110, hudH = 34;
+            let hudX = hX + size + 15, hudY = hY;
+            if (hudX + hudW > canvas.width - 10) hudX = hX - hudW - 15;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(hudX, hudY, hudW, hudH);
             ctx.strokeStyle = 'rgba(255,255,255,0.25)';
@@ -293,136 +306,120 @@ function onHandResults(results) {
             ctx.fillText('Y: ' + Math.round(cY), hudX+8, hudY+25);
         }
 
-        // Deteksi tangan diam: cek pergerakan tangan kedua (indeks 1) jika ada
-        if (currentHandPoints.length >= 2) {
-            let hand0Still = false, hand1Still = false;
-            // Update prev pos untuk kedua tangan (jika ada)
-            if (prevHandPos[0] && currentHandPoints[0]) {
-                let dx = currentHandPoints[0].x - prevHandPos[0].x;
-                let dy = currentHandPoints[0].y - prevHandPos[0].y;
-                if (Math.sqrt(dx*dx+dy*dy) < 20) hand0Still = true;
+        // Kumpulkan kotak tangan yang terbuka lebar
+        for (const box of detectedBoxes) {
+            if (box.isFullOpen) {
+                openHandBoxes.push({x: box.x, y: box.y, w: box.w, h: box.h});
             }
-            if (prevHandPos[1] && currentHandPoints[1]) {
-                let dx = currentHandPoints[1].x - prevHandPos[1].x;
-                let dy = currentHandPoints[1].y - prevHandPos[1].y;
-                if (Math.sqrt(dx*dx+dy*dy) < 20) hand1Still = true;
-            }
-
-            // Cek kondisi: satu tangan terbuka lebar, tangan lain diam
-            // Tangan 0 terbuka & tangan 1 diam -> tampilkan di tangan 0
-            if (detectedBoxes[0] && detectedBoxes[0].handInfo.isFullOpen && hand1Still) {
-                openHandBoxes.push({x: detectedBoxes[0].x, y: detectedBoxes[0].y, w: detectedBoxes[0].w, h: detectedBoxes[0].h});
-            }
-            // Tangan 1 terbuka & tangan 0 diam -> tampilkan di tangan 1
-            if (detectedBoxes[1] && detectedBoxes[1].handInfo.isFullOpen && hand0Still) {
-                openHandBoxes.push({x: detectedBoxes[1].x, y: detectedBoxes[1].y, w: detectedBoxes[1].w, h: detectedBoxes[1].h});
-            }
-
-            // Simpan posisi
-            prevHandPos[0] = {x: currentHandPoints[0].x, y: currentHandPoints[0].y};
-            prevHandPos[1] = {x: currentHandPoints[1].x, y: currentHandPoints[1].y};
-        } else {
-            // Reset jika tidak ada dua tangan
-            prevHandPos = [null, null];
         }
-    } else {
-        prevHandPos = [null, null];
     }
 
-    // Fusion detection (dua tangan berdekatan)
+    // Fusion detection: HANYA jika kedua kotak tumpang tindih (overlap), tidak berdasarkan jarak
     isFused = false;
     if (detectedBoxes.length === 2) {
-        var b1=detectedBoxes[0], b2=detectedBoxes[1];
-        var overlap     = b1.x < b2.x+b2.w && b1.x+b1.w > b2.x && b1.y < b2.y+b2.h && b1.y+b1.h > b2.y;
-        var closeEnough = Math.abs((b1.x+b1.w/2)-(b2.x+b2.w/2)) < 200;
-        isFused = overlap || closeEnough;
+        const b1 = detectedBoxes[0];
+        const b2 = detectedBoxes[1];
+        const overlap = b1.x < b2.x + b2.w && b1.x + b1.w > b2.x && b1.y < b2.y + b2.h && b1.y + b1.h > b2.y;
+        isFused = overlap;  // hanya overlap, bukan closeEnough
     }
 
-    // Particles (warna cyan jika fusion, putih normal)
-    for (var di=0; di<detectedBoxes.length; di++) {
-        var b   = detectedBoxes[di];
-        var emit = isFused ? 16 : 5;
-        for (var k=0; k<emit; k++) spawnParticle(b.x+b.w/2, b.y+b.h/2);
+    // Partikel (monokrom saat fusion)
+    for (const box of detectedBoxes) {
+        const emit = isFused ? 10 : 3;
+        for (let k = 0; k < emit; k++) spawnParticle(box.x+box.w/2, box.y+box.h/2);
     }
 
     ctx.save();
-    ctx.font = 'bold ' + (isFused?16:12) + 'px monospace';
-    for (var p=particles.length-1; p>=0; p--) {
-        var particle = particles[p];
-        particle.x += particle.vx; particle.y += particle.vy; particle.life--;
-        var gx2 = Math.random()>0.92 ? Math.random()*16-8 : 0;
-        if (Math.random()>0.95) particle.text = particle.text==="1"?"0":"1";
-        var prog = particle.life / particle.maxLife;
-        // Partikel tidak ungu
-        ctx.fillStyle = isFused ? 'rgba(0,255,200,'+prog+')' : 'rgba(255,255,255,'+prog+')';
+    ctx.font = `bold ${isFused ? 16 : 12}px monospace`;
+    for (let p = particles.length-1; p >= 0; p--) {
+        const particle = particles[p];
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life--;
+        const gx2 = Math.random() > 0.92 ? (Math.random()*16-8) : 0;
+        if (Math.random() > 0.95) particle.text = particle.text === "1" ? "0" : "1";
+        const prog = particle.life / particle.maxLife;
+        // Warna partikel: putih jika normal, monokrom acak jika fusion
+        const v = Math.floor(prog * 255);
+        ctx.fillStyle = isFused ? `rgb(${v},${v},${v})` : `rgba(255,255,255,${prog})`;
         ctx.fillText(particle.text, particle.x+gx2, particle.y);
-        if (particle.life<=0) particles.splice(p,1);
+        if (particle.life <= 0) particles.splice(p, 1);
     }
     ctx.restore();
 
-    // Glitch scanlines (efek glitch lebih intens saat fusion)
-    if (isFused && frameCount%2===0) {
-        ctx.fillStyle = 'rgba(0,255,200,0.1)';
-        ctx.fillRect(0, Math.random()*canvas.height, canvas.width, Math.random()*14+6);
-        if (Math.random()>0.5) {
-            ctx.fillStyle = 'rgba(255,255,255,0.08)';
-            ctx.fillRect(0, Math.random()*canvas.height, canvas.width, 2);
+    // Glitch effects monokrom (hanya saat fusion)
+    if (isFused && frameCount % 2 === 0) {
+        // Garis horizontal acak hitam/putih
+        const lineY = Math.random() * canvas.height;
+        const lineH = Math.random() * 16 + 4;
+        const grayVal = Math.floor(Math.random() * 256);
+        ctx.fillStyle = `rgb(${grayVal},${grayVal},${grayVal})`;
+        ctx.fillRect(0, lineY, canvas.width, lineH);
+
+        // Garis tipis putih/hitam
+        if (Math.random() > 0.5) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#000000';
+            ctx.fillRect(0, Math.random()*canvas.height, canvas.width, 1);
         }
-        // Chromatic aberration palsu
+
+        // Chromatic aberration palsu dengan offset monokrom
         ctx.save();
         ctx.globalAlpha = 0.1;
-        ctx.drawImage(canvas, 2, 0);
-        ctx.drawImage(canvas, -2, 0);
+        ctx.drawImage(canvas, 4, 0);
+        ctx.drawImage(canvas, -4, 0);
         ctx.restore();
     }
 
-    // Gambar ASCII art (tanpa background hitam, tanpa ungu)
-    for (var oi=0; oi<openHandBoxes.length; oi++) {
-        var ob = openHandBoxes[oi];
+    // Gambar ASCII art (tanpa background hitam)
+    for (const ob of openHandBoxes) {
         drawAsciiOnHand(ob.x, ob.y, ob.w, ob.h);
     }
 
-    // Garis penghubung dual-hand (putih, efek dash saat non-fusion, glitch saat fusion)
+    // Garis penghubung antar tangan (jika ada dua)
     if (currentHandPoints.length === 2) {
-        var hp1=currentHandPoints[0], hp2=currentHandPoints[1];
+        const hp1 = currentHandPoints[0], hp2 = currentHandPoints[1];
         ctx.save();
         if (isFused) {
-            var lc2 = Math.floor(Math.random()*5)+2;
-            for (var g=0; g<lc2; g++) {
-                var gOff = (g - lc2/2) * 9;
+            const lc2 = Math.floor(Math.random()*5)+2;
+            for (let g = 0; g < lc2; g++) {
+                const gOff = (g - lc2/2) * 9;
                 ctx.lineWidth = Math.random()*3+1;
-                // Garis glitch putih bukan ungu
-                ctx.strokeStyle = 'rgba(255,255,255,'+(Math.random()*0.8+0.2)+')';
+                ctx.strokeStyle = currentGlitchColor;
                 ctx.beginPath();
                 ctx.moveTo(hp1.x+gOff, hp1.y+gOff);
                 ctx.lineTo(hp2.x+gOff, hp2.y+gOff);
                 ctx.stroke();
             }
         } else {
-            ctx.strokeStyle='#ffffff'; ctx.lineWidth=2;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
             ctx.setLineDash([12,10,4,10]);
             ctx.lineDashOffset = -frameCount*2;
-            ctx.beginPath(); ctx.moveTo(hp1.x,hp1.y); ctx.lineTo(hp2.x,hp2.y); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(hp1.x, hp1.y);
+            ctx.lineTo(hp2.x, hp2.y);
+            ctx.stroke();
             ctx.setLineDash([]);
         }
-        var mx=(hp1.x+hp2.x)/2, my=(hp1.y+hp2.y)/2;
-        ctx.fillStyle = isFused ? '#00ffcc' : '#ffffff'; // fusion titik tengah cyan
-        ctx.beginPath(); ctx.arc(mx, my, isFused?6:4, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth=1; ctx.beginPath(); ctx.arc(mx, my, isFused?14:10, 0, Math.PI*2); ctx.stroke();
+        const mx = (hp1.x+hp2.x)/2, my = (hp1.y+hp2.y)/2;
+        ctx.fillStyle = isFused ? currentGlitchColor : '#ffffff';
+        ctx.beginPath(); ctx.arc(mx, my, isFused ? 6 : 4, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = isFused ? 'rgba(128,128,128,0.3)' : 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(mx, my, isFused ? 14 : 10, 0, Math.PI*2); ctx.stroke();
         ctx.restore();
     }
 
-    // Fusion banner (putih, bukan ungu)
+    // Banner fusion (monokrom)
     if (isFused) {
         ctx.save();
-        ctx.fillStyle = 'rgba(0,255,200,0.15)'; // cyan transparan
+        ctx.fillStyle = 'rgba(128,128,128,0.15)';
         ctx.fillRect(0, canvas.height/2-20, canvas.width, 40);
-        ctx.strokeStyle = 'rgba(0,255,200,0.4)';
-        ctx.lineWidth=1;
+        ctx.strokeStyle = 'rgba(128,128,128,0.4)';
+        ctx.lineWidth = 1;
         ctx.strokeRect(0, canvas.height/2-20, canvas.width, 40);
-        if (frameCount%4 !== 0) {
-            ctx.fillStyle = '#00ffcc';
+        if (frameCount % 4 !== 0) {
+            ctx.fillStyle = currentGlitchColor;
             ctx.font = 'bold 11px monospace';
             ctx.textAlign = 'center';
             ctx.fillText('[ FUSION MODE ACTIVE — DUAL HAND LOCK ]', canvas.width/2, canvas.height/2+4);
