@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Varnix AI - Chat Interface</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --panel-color: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-color: #ffffff;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --user-msg-bg: #262626;
+            --ai-msg-bg: #141414;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: var(--panel-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .chat-header p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        /* Gaya Balon Obrolan */
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background-color: var(--user-msg-bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai {
+            background-color: var(--ai-msg-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message.system {
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            align-self: center;
+            text-align: center;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            background: var(--panel-color);
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            background: #222222;
+            border: 1px solid var(--border-color);
+            padding: 14px 16px;
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input-area input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .chat-input-area button {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: none;
+            padding: 0 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            opacity: 0.9;
+        }
+
+        .chat-input-area button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Custom Scrollbar */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>VARNIX AI</h1>
+            <p>Sistem Kontrol Asisten Virtual</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">Halo! Ada yang bisa saya bantu hari ini?</div>
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="userInput" placeholder="Ketik pesan di sini..." autocomplete="off">
+            <button id="sendBtn">Kirim</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Parameter API sesuai skrip Python Anda
+        const API_URL = "https://api.naze.biz.id/ai/chat";
+        const API_KEY = "nz-cb8f296edc";
+
+        // Fungsi untuk menambahkan balon chat ke layar
+        function appendMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            msgDiv.innerText = text;
+            chatMessages.appendChild(msgDiv);
+            
+            // Otomatis scroll ke bawah setiap ada pesan baru
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Fungsi utama mengirim pesan ke API
+        async function sendMessage() {
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            // Tampilkan pesan pengguna di layar
+            appendMessage(query, 'user');
+            userInput.value = ''; // Kosongkan input
+
+            // Cek perintah keluar alternatif
+            if (query.toLowerCase() === 'exit' || query.toLowerCase() === 'quit') {
+                appendMessage("Sistem dihentikan. Silakan tutup halaman ini.", 'system');
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+                return;
+            }
+
+            // Tampilkan indikator loading sementara
+            sendBtn.disabled = true;
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('message', 'ai');
+            loadingDiv.innerText = "Sedang berpikir...";
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                // Melakukan request GET menggunakan Fetch API bawaan browser/JS
+                const response = await fetch(`${API_URL}?query=${encodeURIComponent(query)}&apikey=${API_KEY}`);
+                const data = await response.json();
+
+                // Hapus tulisan "Sedang berpikir..."
+                chatMessages.removeChild(loadingDiv);
+
+                if (data.success) {
+                    appendMessage(data.result.message, 'ai');
+                } else {
+                    appendMessage(`Gagal mendapatkan respon: ${JSON.stringify(data)}`, 'system');
+                }
+            } catch (error) {
+                if (chatMessages.contains(loadingDiv)) {
+                    chatMessages.removeChild(loadingDiv);
+                }
+                appendMessage(`Error: ${error.message}`, 'system');
+            } finally {
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        // Event listener saat tombol kirim diklik
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Event listener saat menekan tombol "Enter" di keyboard
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+
+</body>
+</html>
