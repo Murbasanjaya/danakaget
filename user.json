@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "accounts": {
+    "free": {
+      "password": "free",
+      "premium": false,
+      "model": "all"
+    },
+    "newro": {
+      "password": "newro",
+      "premium": true,
+      "model": "Infinix X6871"
+    }
+  }
+}
