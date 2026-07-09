@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "accounts": {
-    "free": {
+    "user": {
       "password": "free",
       "premium": false,
       "model": "all"
