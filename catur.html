@@ -240,7 +240,7 @@
         <h2>Kekuatan Bot</h2>
         <div class="field">
           <div class="elo-row">
-            <input type="range" id="eloSlider" min="400" max="2400" step="50" value="1200">
+            <input type="range" id="eloSlider" min="400" max="5000" step="100" value="1200">
             <div class="elo-val" id="eloVal">1200</div>
           </div>
           <div class="elo-tag" id="eloTag">Menengah — mikir 2 langkah, sesekali meleset</div>
@@ -520,16 +520,21 @@
     }
     return score;
   }
-  function negamax(g, depth, alpha, beta){
+  const ABORT = Symbol('abort');
+  let nodeCheckCounter = 0;
+  function negamax(g, depth, alpha, beta, deadline){
     if(g.in_checkmate()) return -100000 - depth;
     if(g.in_draw() || g.in_stalemate() || g.in_threefold_repetition()) return 0;
     if(depth===0) return (g.turn()==='w'?1:-1) * absoluteEval(g);
+    if((nodeCheckCounter=(nodeCheckCounter+1)&511)===0){ if(performance.now()>deadline) throw ABORT; }
     let moves = g.moves({verbose:true});
     moves.sort((a,b)=>{ const av=a.captured?pieceValueOf(a.captured):0; const bv=b.captured?pieceValueOf(b.captured):0; return bv-av; });
     let best = -Infinity;
     for(const m of moves){
       g.move(m);
-      const score = -negamax(g, depth-1, -beta, -alpha);
+      let score;
+      try{ score = -negamax(g, depth-1, -beta, -alpha, deadline); }
+      catch(e){ g.undo(); throw e; }
       g.undo();
       if(score>best) best=score;
       if(best>alpha) alpha=best;
@@ -537,30 +542,85 @@
     }
     return best;
   }
+  // small synchronous helper for a quick fixed-depth lookup (never used for anything time-critical)
   function scoreAllMoves(g, depth){
     const moves = g.moves({verbose:true});
     const scored = moves.map(m=>{
       g.move(m);
-      const s = -negamax(g, depth-1, -Infinity, Infinity);
+      const s = -negamax(g, depth-1, -Infinity, Infinity, performance.now()+60000);
       g.undo();
-      return {m, s};
+      return {m,s};
     });
     scored.sort((a,b)=>b.s-a.s);
     return scored;
   }
+  // Iterative deepening bounded by a millisecond time budget. The root-move loop is itself
+  // chunked (~35ms slices) with setTimeout(0) between chunks, so even the slowest, deepest
+  // pass never blocks the UI thread for more than a fraction of a second at a time.
+  function findBestMovesAsync(fen, maxDepth, budgetMs, cb){
+    const deadline = performance.now() + budgetMs;
+    const g = new Chess(fen);
+    let overallBest = null, pv = null, depth = 1;
 
-  function eloConfig(elo){
-    if(elo<700)  return {depth:1, blunder:.40, top:5, tag:'Pemula — asal jalan, sering blunder'};
-    if(elo<1000) return {depth:1, blunder:.25, top:4, tag:'Santai — mikir 1 langkah, kadang meleset'};
-    if(elo<1300) return {depth:2, blunder:.15, top:3, tag:'Menengah — mikir 2 langkah, sesekali meleset'};
-    if(elo<1600) return {depth:2, blunder:.08, top:2, tag:'Cukup kuat — jarang blunder'};
-    if(elo<1900) return {depth:3, blunder:.04, top:2, tag:'Kuat — hitungan taktis 3 langkah'};
-    if(elo<2200) return {depth:3, blunder:.01, top:1, tag:'Ahli — hampir selalu memilih langkah terbaik'};
-    return {depth:4, blunder:0, top:1, tag:'Master — perhitungan dalam, nyaris sempurna'};
+    function runDepth(){
+      if(depth>maxDepth || performance.now()>=deadline){ cb(overallBest); return; }
+      const rootMoves = g.moves({verbose:true});
+      if(rootMoves.length===0){ cb(overallBest); return; }
+      rootMoves.sort((a,b)=>{
+        const aPV = pv && a.from===pv.from && a.to===pv.to && a.promotion===pv.promotion;
+        const bPV = pv && b.from===pv.from && b.to===pv.to && b.promotion===pv.promotion;
+        if(aPV && !bPV) return -1; if(bPV && !aPV) return 1;
+        const av=a.captured?pieceValueOf(a.captured):0, bv=b.captured?pieceValueOf(b.captured):0;
+        return bv-av;
+      });
+      const scored = [];
+      let i = 0, aborted = false;
+      function processChunk(){
+        const chunkEnd = performance.now() + 35;
+        while(i<rootMoves.length && performance.now()<chunkEnd){
+          const m = rootMoves[i];
+          g.move(m);
+          let s;
+          try{ s = -negamax(g, depth-1, -Infinity, Infinity, deadline); }
+          catch(e){
+            g.undo();
+            if(e===ABORT){ aborted=true; break; }
+            throw e;
+          }
+          g.undo();
+          scored.push({m,s});
+          i++;
+        }
+        if(aborted || performance.now()>=deadline){ cb(overallBest); return; }
+        if(i<rootMoves.length){ setTimeout(processChunk, 0); return; }
+        scored.sort((a,b)=>b.s-a.s);
+        overallBest = scored;
+        pv = scored[0].m;
+        depth++;
+        if(performance.now()>=deadline){ cb(overallBest); return; }
+        setTimeout(runDepth, 0);
+      }
+      processChunk();
+    }
+    runDepth();
   }
 
-  function classifyMove(scored, playedIdx, moveNumber){
-    if(moveNumber<=3) return {tier:'book', label:'Buku', chip:'📖'};
+
+  function eloConfig(elo){
+    if(elo<700)  return {maxDepth:2, budget:130, blunder:.40, top:5, tag:'Pemula — asal jalan, sering blunder'};
+    if(elo<1000) return {maxDepth:2, budget:200, blunder:.25, top:4, tag:'Santai — mikir sebentar, kadang meleset'};
+    if(elo<1300) return {maxDepth:3, budget:280, blunder:.15, top:3, tag:'Menengah — sesekali meleset'};
+    if(elo<1600) return {maxDepth:3, budget:380, blunder:.08, top:2, tag:'Cukup kuat — jarang blunder'};
+    if(elo<1900) return {maxDepth:4, budget:500, blunder:.04, top:2, tag:'Kuat — hitungan taktis lumayan dalam'};
+    if(elo<2200) return {maxDepth:4, budget:650, blunder:.015, top:1, tag:'Ahli — hampir selalu langkah terbaik'};
+    if(elo<2600) return {maxDepth:5, budget:800, blunder:0, top:1, tag:'Master — nyaris sempurna'};
+    if(elo<3200) return {maxDepth:5, budget:1000, blunder:0, top:1, tag:'Grandmaster — nyaris tanpa celah'};
+    if(elo<4000) return {maxDepth:6, budget:1300, blunder:0, top:1, tag:'Super GM — sangat sulit dikalahkan'};
+    return {maxDepth:7, budget:1600, blunder:0, top:1, tag:'Maksimal — hampir mustahil menang'};
+  }
+
+  function classifyMove(scored, playedIdx, plyNumber){
+    if(plyNumber<=6) return {tier:'book', label:'Buku', chip:'📖'};
     const best = scored[0].s;
     const played = scored[playedIdx].s;
     const loss = best - played;
@@ -700,9 +760,11 @@
     historyList.scrollTop = historyList.scrollHeight;
   }
   function logMove(color, san, tag){
-    if(color==='w'){ moveLog.push({num: moveLog.length+1, white:{san,tag}, black:null}); }
-    else { if(moveLog.length===0) moveLog.push({num:1, white:null, black:null}); moveLog[moveLog.length-1].black = {san,tag}; }
+    let entry;
+    if(color==='w'){ entry = {san,tag}; moveLog.push({num: moveLog.length+1, white:entry, black:null}); }
+    else { if(moveLog.length===0) moveLog.push({num:1, white:null, black:null}); entry = {san,tag}; moveLog[moveLog.length-1].black = entry; }
     renderHistory();
+    return entry;
   }
 
   // ---------- suggestion / hint mode ----------
@@ -716,11 +778,10 @@
     }
     hintText.classList.remove('active');
     hintText.textContent = 'Menghitung saran…';
-    setTimeout(()=>{
+    const fen = game.fen();
+    findBestMovesAsync(fen, 4, 450, (scored)=>{
       if(!hintMode || game.turn()!==humanColor || gameOverFlag) return;
-      const gClone = new Chess(game.fen());
-      const scored = scoreAllMoves(gClone, 3);
-      if(!scored.length) return;
+      if(!scored || !scored.length) { hintText.textContent = ''; return; }
       const m = scored[0].m;
       lastSuggestionMove = m;
       const fromEl = getEl(m.from), toEl = getEl(m.to);
@@ -731,7 +792,7 @@
       if(m.flags.indexOf('p')!==-1) t += ' (promosi Menteri)';
       hintText.classList.add('active');
       hintText.textContent = t;
-    }, 30);
+    });
   }
 
   // ---------- interaction ----------
@@ -756,62 +817,68 @@
   }
 
   function doPlayerMove(target){
-    const cfg = eloConfig(parseInt(eloSlider.value,10));
-    const qDepth = Math.max(1, Math.min(2, cfg.depth));
-    const gClone = new Chess(game.fen());
-    const scored = scoreAllMoves(gClone, qDepth);
-    const idx = scored.findIndex(s=>s.m.from===target.from && s.m.to===target.to && s.m.promotion===target.promotion);
-    const tag = classifyMove(scored, idx<0?scored.length-1:idx, moveLog.length+1);
-
+    const fenBefore = game.fen();
     pushHistorySnapshot();
     const m = game.move({from:target.from, to:target.to, promotion:'q'});
+    const plyNumber = game.history().length;
     clearHighlights(); clearSuggestion();
     selected=null; legalTargets=[];
     applyMoveToPieces(m);
     paintLastMove(m);
     renderCaptures();
-    logMove(humanColor, m.san, tag);
-    showBadge(m.to, TIER_CLASS[tag.tier], tag.chip);
+    const entry = logMove(humanColor, m.san, {tier:'good', label:'', chip:''});
     updateStatus();
     paintCheck();
     if(game.in_check() && !gameOverFlag) sndCheck();
+
+    // classify the move in the background (small, fast budget) so the move itself never waits on this
+    findBestMovesAsync(fenBefore, 3, 160, (scored)=>{
+      if(!scored || !scored.length) return;
+      const idx = scored.findIndex(s=>s.m.from===target.from && s.m.to===target.to && s.m.promotion===target.promotion);
+      const tag = classifyMove(scored, idx<0?scored.length-1:idx, plyNumber);
+      entry.tag = tag;
+      renderHistory();
+      showBadge(m.to, TIER_CLASS[tag.tier], tag.chip);
+    });
 
     if(!gameOverFlag){
       botThinking = true;
       hintText.textContent = ''; hintText.classList.remove('active');
       statusPill.textContent = currentName(botColor) + ' sedang berpikir…';
-      setTimeout(runBotMove, 420);
+      setTimeout(runBotMove, 120);
     }
   }
 
   function runBotMove(){
     const elo = parseInt(eloSlider.value,10);
     const cfg = eloConfig(elo);
-    const gClone = new Chess(game.fen());
-    const scored = scoreAllMoves(gClone, cfg.depth);
-    let chosenIdx;
-    if(Math.random() < cfg.blunder){
-      const worseStart = Math.max(1, Math.ceil(scored.length/2));
-      const pool = scored.slice(worseStart);
-      chosenIdx = pool.length ? worseStart + Math.floor(Math.random()*pool.length) : scored.length-1;
-    } else {
-      const topN = Math.min(cfg.top, scored.length);
-      chosenIdx = Math.floor(Math.random()*topN);
-    }
-    const chosen = scored[chosenIdx].m;
-    const tag = classifyMove(scored, chosenIdx, moveLog.length);
-
-    const m = game.move({from:chosen.from, to:chosen.to, promotion:'q'});
-    applyMoveToPieces(m);
-    paintLastMove(m);
-    renderCaptures();
-    logMove(botColor, m.san, tag);
-    showBadge(m.to, TIER_CLASS[tag.tier], tag.chip);
-    updateStatus();
-    paintCheck();
-    if(game.in_check() && !gameOverFlag) sndCheck();
-    botThinking = false;
-    updateSuggestion();
+    const fen = game.fen();
+    findBestMovesAsync(fen, cfg.maxDepth, cfg.budget, (scored)=>{
+      if(!scored || !scored.length){ botThinking = false; return; }
+      let chosenIdx;
+      if(Math.random() < cfg.blunder){
+        const worseStart = Math.max(1, Math.ceil(scored.length/2));
+        const pool = scored.slice(worseStart);
+        chosenIdx = pool.length ? worseStart + Math.floor(Math.random()*pool.length) : scored.length-1;
+      } else {
+        const topN = Math.min(cfg.top, scored.length);
+        chosenIdx = Math.floor(Math.random()*topN);
+      }
+      const chosen = scored[chosenIdx].m;
+      const m = game.move({from:chosen.from, to:chosen.to, promotion:'q'});
+      const plyNumber = game.history().length;
+      const tag = classifyMove(scored, chosenIdx, plyNumber);
+      applyMoveToPieces(m);
+      paintLastMove(m);
+      renderCaptures();
+      logMove(botColor, m.san, tag);
+      showBadge(m.to, TIER_CLASS[tag.tier], tag.chip);
+      updateStatus();
+      paintCheck();
+      if(game.in_check() && !gameOverFlag) sndCheck();
+      botThinking = false;
+      updateSuggestion();
+    });
   }
 
   // ---------- controls ----------
