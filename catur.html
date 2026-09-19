@@ -304,6 +304,47 @@
   let lastMoveObj = null;
   let lastSuggestionMove = null;
 
+  // ---------- real Stockfish engine (runs in a Worker; falls back to the built-in engine if it can't load) ----------
+  let sfWorker = null, sfReady = false, sfFailed = false, sfInitStarted = false;
+  let sfPendingCb = null;
+  function initStockfish(){
+    if(sfInitStarted) return;
+    sfInitStarted = true;
+    try{
+      sfWorker = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+      sfWorker.onmessage = (e)=>{
+        const line = typeof e.data==='string' ? e.data : '';
+        if(line==='uciok'){ sfWorker.postMessage('isready'); }
+        else if(line==='readyok'){ sfReady = true; updateEloUI(); }
+        else if(line.indexOf('bestmove')===0){
+          const parts = line.split(' ');
+          const uci = parts[1];
+          if(sfPendingCb){ const cb=sfPendingCb; sfPendingCb=null; cb(uci==='(none)'?null:uci); }
+        }
+      };
+      sfWorker.onerror = ()=>{ sfFailed=true; sfReady=false; try{sfWorker.terminate();}catch(err){} sfWorker=null; updateEloUI(); };
+      sfWorker.postMessage('uci');
+      setTimeout(()=>{ if(!sfReady && !sfFailed){ sfFailed=true; if(sfWorker){ try{sfWorker.terminate();}catch(err){} } sfWorker=null; updateEloUI(); } }, 7000);
+    }catch(err){ sfFailed = true; sfWorker=null; }
+  }
+  function skillForElo(elo){ return Math.round(Math.max(0,Math.min(1,(elo-400)/4600))*20); }
+  function movetimeForElo(elo){ return Math.round(150 + Math.max(0,Math.min(1,(elo-400)/4600))*2600); }
+  function askStockfish(fen, elo, cb){
+    if(!sfReady || !sfWorker){ cb(null); return; }
+    sfPendingCb = cb;
+    sfWorker.postMessage('setoption name Skill Level value ' + skillForElo(elo));
+    sfWorker.postMessage('position fen ' + fen);
+    sfWorker.postMessage('go movetime ' + movetimeForElo(elo));
+  }
+  function uciToMoveObj(uci){
+    if(!uci || uci.length<4) return null;
+    const from = uci.slice(0,2), to = uci.slice(2,4), promo = uci.length>4 ? uci[4] : undefined;
+    const legal = game.moves({verbose:true});
+    return legal.find(mm=>mm.from===from && mm.to===to && (promo?mm.promotion===promo:true))
+        || legal.find(mm=>mm.from===from && mm.to===to)
+        || null;
+  }
+
   const boardEl = document.getElementById('board');
   const pieceLayer = document.getElementById('pieceLayer');
   const clickLayer = document.getElementById('clickLayer');
@@ -876,26 +917,10 @@
 
   function runBotMove(){
     const elo = parseInt(eloSlider.value,10);
-    const cfg = eloConfig(elo);
     const fen = game.fen();
-    findBestMovesAsync(fen, cfg.maxDepth, cfg.budget, (scored)=>{
-      if(!scored || !scored.length){ botThinking = false; return; }
-      let chosenIdx;
-      const forcedMateFound = scored[0].s > 50000; // a forced mating line was found in the search
-      if(forcedMateFound){
-        chosenIdx = 0; // a professional player never randomizes away a winning mate
-      } else if(Math.random() < cfg.blunder){
-        const worseStart = Math.max(1, Math.ceil(scored.length/2));
-        const pool = scored.slice(worseStart);
-        chosenIdx = pool.length ? worseStart + Math.floor(Math.random()*pool.length) : scored.length-1;
-      } else {
-        const topN = Math.min(cfg.top, scored.length);
-        chosenIdx = Math.floor(Math.random()*topN);
-      }
-      const chosen = scored[chosenIdx].m;
-      const m = game.move({from:chosen.from, to:chosen.to, promotion:'q'});
-      const plyNumber = game.history().length;
-      const tag = classifyMove(scored, chosenIdx, plyNumber);
+
+    function finalizeBotMove(moveObj, tag){
+      const m = game.move({from:moveObj.from, to:moveObj.to, promotion:moveObj.promotion||'q'});
       applyMoveToPieces(m);
       paintLastMove(m);
       renderCaptures();
@@ -906,14 +931,64 @@
       if(game.in_check() && !gameOverFlag) sndCheck();
       botThinking = false;
       updateSuggestion();
-    });
+    }
+
+    function classifyThenFinalize(moveObj){
+      // quality badge is cosmetic — graded with our own light engine regardless of which engine chose the move
+      findBestMovesAsync(fen, 3, 180, (scored)=>{
+        let tag = {tier:'good', label:'', chip:''};
+        if(scored && scored.length){
+          const idx = scored.findIndex(s=>s.m.from===moveObj.from && s.m.to===moveObj.to);
+          tag = classifyMove(scored, idx<0?scored.length-1:idx, game.history().length+1);
+        }
+        finalizeBotMove(moveObj, tag);
+      });
+    }
+
+    function fallbackEngineMove(){
+      const cfg = eloConfig(elo);
+      findBestMovesAsync(fen, cfg.maxDepth, cfg.budget, (scored)=>{
+        if(!scored || !scored.length){ botThinking = false; return; }
+        let chosenIdx;
+        const forcedMateFound = scored[0].s > 50000; // a forced mating line was found in the search
+        if(forcedMateFound){
+          chosenIdx = 0; // a professional player never randomizes away a winning mate
+        } else if(Math.random() < cfg.blunder){
+          const worseStart = Math.max(1, Math.ceil(scored.length/2));
+          const pool = scored.slice(worseStart);
+          chosenIdx = pool.length ? worseStart + Math.floor(Math.random()*pool.length) : scored.length-1;
+        } else {
+          const topN = Math.min(cfg.top, scored.length);
+          chosenIdx = Math.floor(Math.random()*topN);
+        }
+        const chosen = scored[chosenIdx].m;
+        const tag = classifyMove(scored, chosenIdx, game.history().length+1);
+        finalizeBotMove(chosen, tag);
+      });
+    }
+
+    if(sfReady && sfWorker){
+      askStockfish(fen, elo, (uci)=>{
+        const moveObj = uci ? uciToMoveObj(uci) : null;
+        if(!moveObj){ fallbackEngineMove(); return; }
+        classifyThenFinalize(moveObj);
+      });
+    } else {
+      fallbackEngineMove();
+    }
   }
 
   // ---------- controls ----------
   function updateEloUI(){
     const elo = parseInt(eloSlider.value,10);
     eloVal.textContent = elo;
-    eloTag.textContent = eloConfig(elo).tag;
+    if(sfReady){
+      eloTag.textContent = 'Stockfish aktif — Skill ' + skillForElo(elo) + '/20';
+    } else if(sfFailed){
+      eloTag.textContent = eloConfig(elo).tag + ' (mesin bawaan — Stockfish gagal dimuat)';
+    } else {
+      eloTag.textContent = eloConfig(elo).tag + ' (memuat Stockfish…)';
+    }
     subTop.textContent = 'Elo ' + elo;
     savePref('elo', String(elo));
   }
@@ -1001,6 +1076,7 @@
   nameBottom.textContent = playerNameInput.value.trim() || 'Kamu';
   nameTop.textContent = botNameInput.value.trim() || 'Bot';
   updateEloUI();
+  initStockfish();
   startNewGame();
 })();
 </script>
