@@ -3,152 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Analisis Stats & Penghasilan</title>
+    <title>Pro Dashboard - Stats & Revenue (Rupiah Converter)</title>
     
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse CDN untuk membaca CSV -->
+    <!-- PapaParse (CSV Reader) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Font Awesome Icons -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
                     colors: {
-                        darkbg: '#0f172a',
-                        cardbg: '#1e293b',
-                        accent: '#3b82f6',
-                        success: '#10b981'
+                        darkbg: '#0b0f19',
+                        cardbg: '#151e32',
+                        cardborder: '#23304d',
+                        accent: '#6366f1',
+                        emeraldGlow: '#10b981'
                     }
                 }
             }
         }
     </script>
+    <style>
+        .glow-card {
+            transition: all 0.3s ease;
+        }
+        .glow-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+    </style>
 </head>
-<body class="bg-darkbg text-slate-100 min-h-screen pb-12 font-sans">
+<body class="bg-darkbg text-slate-100 min-h-screen pb-16 font-sans">
 
-    <!-- Header Navigation -->
-    <header class="bg-cardbg border-b border-slate-700 py-4 px-6 mb-8 shadow-lg">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+    <!-- Header & Control Bar -->
+    <header class="bg-cardbg/80 backdrop-blur-md border-b border-cardborder sticky top-0 z-50 py-4 px-6 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            
+            <!-- Brand Logo -->
             <div class="flex items-center gap-3">
-                <div class="p-3 bg-blue-600 rounded-xl text-white">
-                    <i class="fa-solid fa-chart-line text-xl"></i>
+                <div class="p-3 bg-gradient-to-tr from-indigo-600 to-blue-500 rounded-2xl shadow-lg shadow-indigo-500/30 text-white">
+                    <i class="fa-solid fa-chart-pie text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-wide">Dashboard Stats & Penghasilan</h1>
-                    <p class="text-xs text-slate-400">Visualisasi Data CSV Interaktif</p>
+                    <h1 class="text-xl font-bold tracking-wide text-white">Analytics & Revenue Dashboard</h1>
+                    <p class="text-xs text-slate-400">Visualisasi Data Stats & Konversi Rupiah (IDR)</p>
                 </div>
             </div>
 
-            <!-- Upload Section -->
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <label for="csvFileInput" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg cursor-pointer transition font-medium text-sm shadow-md w-full justify-center md:w-auto">
-                    <i class="fa-solid fa-file-csv text-lg"></i>
-                    <span>Upload CSV (stats (5).csv)</span>
+            <!-- Controls: Kurs, Currency Switch, Upload -->
+            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                
+                <!-- Input Kurs USD to IDR -->
+                <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+                    <span class="text-slate-400 mr-2"><i class="fa-solid fa-dollar-sign"></i> Kurs USD:</span>
+                    <span class="text-slate-500 font-bold mr-1">Rp</span>
+                    <input type="number" id="kursInput" value="15800" class="w-20 bg-transparent text-emerald-400 font-bold focus:outline-none text-sm">
+                </div>
+
+                <!-- Currency Switcher Toggle -->
+                <div class="bg-slate-900 p-1 rounded-xl border border-slate-700 flex items-center">
+                    <button id="btnIDR" onclick="setCurrency('IDR')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow">
+                        Rp (IDR)
+                    </button>
+                    <button id="btnUSD" onclick="setCurrency('USD')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                        $ (USD)
+                    </button>
+                </div>
+
+                <!-- Upload CSV Button -->
+                <label for="csvFileInput" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl cursor-pointer transition font-semibold text-xs shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-file-arrow-up text-sm"></i>
+                    <span>Import CSV (stats (5).csv)</span>
                 </label>
                 <input type="file" id="csvFileInput" accept=".csv" class="hidden">
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-6">
+    <main class="max-w-7xl mx-auto px-6 mt-8">
 
-        <!-- KPI Summary Cards -->
+        <!-- KPI Summary Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-cardbg p-5 rounded-2xl border border-slate-700/60 shadow-md">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-slate-400 text-sm font-medium">Total Penghasilan</span>
-                    <span class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><i class="fa-solid fa-wallet"></i></span>
+            
+            <!-- Card 1: Total Revenue -->
+            <div class="bg-cardbg p-5 rounded-2xl border border-cardborder glow-card relative overflow-hidden">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Pendapatan</span>
+                    <span class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20"><i class="fa-solid fa-wallet text-base"></i></span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100" id="cardTotalPenghasilan">Rp 0</div>
-                <p class="text-xs text-slate-400 mt-1" id="subPenghasilan">Akumulasi dari CSV</p>
+                <div class="text-2xl font-extrabold text-white" id="cardTotalRevenue">Rp 0</div>
+                <div class="flex items-center gap-1.5 text-xs text-emerald-400 mt-2 font-medium">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span id="subRevenueUsd">$0.00 USD</span>
+                </div>
             </div>
 
-            <div class="bg-cardbg p-5 rounded-2xl border border-slate-700/60 shadow-md">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-slate-400 text-sm font-medium">Rata-rata Penghasilan</span>
-                    <span class="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><i class="fa-solid fa-calculator"></i></span>
+            <!-- Card 2: Average CPM -->
+            <div class="bg-cardbg p-5 rounded-2xl border border-cardborder glow-card">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Rata-rata CPM</span>
+                    <span class="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-layer-group text-base"></i></span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100" id="cardAvgPenghasilan">Rp 0</div>
-                <p class="text-xs text-slate-400 mt-1">Per Entri Data</p>
+                <div class="text-2xl font-extrabold text-white" id="cardAvgCPM">Rp 0</div>
+                <div class="text-xs text-slate-400 mt-2 font-medium" id="subCpmUsd">Cost Per Mille</div>
             </div>
 
-            <div class="bg-cardbg p-5 rounded-2xl border border-slate-700/60 shadow-md">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-slate-400 text-sm font-medium">Total Stats / Metric Start</span>
-                    <span class="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><i class="fa-solid fa-play"></i></span>
+            <!-- Card 3: Impressions & Clicks -->
+            <div class="bg-cardbg p-5 rounded-2xl border border-cardborder glow-card">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Impressions</span>
+                    <span class="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20"><i class="fa-solid fa-eye text-base"></i></span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100" id="cardStartStats">0</div>
-                <p class="text-xs text-slate-400 mt-1">Metrik Awal / Akses</p>
+                <div class="text-2xl font-extrabold text-white" id="cardImpressions">0</div>
+                <div class="text-xs text-purple-300 mt-2 font-medium" id="subClicks">0 Total Klik (CTR 0%)</div>
             </div>
 
-            <div class="bg-cardbg p-5 rounded-2xl border border-slate-700/60 shadow-md">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-slate-400 text-sm font-medium">Total Data Records</span>
-                    <span class="p-2 bg-amber-500/10 text-amber-400 rounded-lg"><i class="fa-solid fa-database"></i></span>
+            <!-- Card 4: Data Count -->
+            <div class="bg-cardbg p-5 rounded-2xl border border-cardborder glow-card">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Periode Data</span>
+                    <span class="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20"><i class="fa-solid fa-calendar-days text-base"></i></span>
                 </div>
-                <div class="text-2xl font-bold text-slate-100" id="cardTotalRows">0</div>
-                <p class="text-xs text-slate-400 mt-1">Baris Terbaca</p>
+                <div class="text-2xl font-extrabold text-white" id="cardRecordCount">0 Hari</div>
+                <div class="text-xs text-slate-400 mt-2 font-medium" id="subDateRange">Entri Terbaca</div>
             </div>
+
         </div>
 
-        <!-- Charts Section -->
+        <!-- Charts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Line Chart: Tren Penghasilan -->
-            <div class="bg-cardbg p-6 rounded-2xl border border-slate-700/60 shadow-md">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-slate-200">Grafik Tren Penghasilan</h2>
-                    <span class="text-xs bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">Line Chart</span>
+            
+            <!-- Line Chart: Revenue & Impression -->
+            <div class="bg-cardbg p-6 rounded-2xl border border-cardborder shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                            <span>Tren Pendapatan & Impressions</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Perkembangan harian pendapatan dan impresi</p>
+                    </div>
+                    <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20" id="badgeCurrency1">IDR (Rp)</span>
                 </div>
-                <div class="relative h-72">
-                    <canvas id="lineChart"></canvas>
+                <div class="relative h-80">
+                    <canvas id="revenueChart"></canvas>
                 </div>
             </div>
 
-            <!-- Bar Chart: Perbandingan Stats/Start -->
-            <div class="bg-cardbg p-6 rounded-2xl border border-slate-700/60 shadow-md">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-slate-200">Grafik Perbandingan Stats / Start</h2>
-                    <span class="text-xs bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30">Bar Chart</span>
+            <!-- Bar Chart: Clicks & CPM -->
+            <div class="bg-cardbg p-6 rounded-2xl border border-cardborder shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-blue-400"></i>
+                            <span>Performa Clicks & CPM</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Jumlah klik interaksi dan tren nilai CPM</p>
+                    </div>
+                    <span class="text-[10px] font-bold bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20">Interactive</span>
                 </div>
-                <div class="relative h-72">
-                    <canvas id="barChart"></canvas>
+                <div class="relative h-80">
+                    <canvas id="clicksCpmChart"></canvas>
                 </div>
             </div>
+
         </div>
 
-        <!-- Table Section -->
-        <div class="bg-cardbg p-6 rounded-2xl border border-slate-700/60 shadow-md">
+        <!-- Data Table Section -->
+        <div class="bg-cardbg p-6 rounded-2xl border border-cardborder shadow-xl">
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-200">Detail Tabel Data</h2>
-                    <p class="text-xs text-slate-400">Seluruh entri dari file CSV yang diimpor</p>
+                    <h2 class="text-base font-bold text-white">Tabel Rincian Statistik</h2>
+                    <p class="text-xs text-slate-400">Seluruh entri data lengkap dari file CSV</p>
                 </div>
-                <div class="relative w-full sm:w-64">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="searchInput" placeholder="Cari data..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                
+                <div class="relative w-full sm:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Cari tanggal, klik, CPM..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
                 </div>
             </div>
 
-            <div class="overflow-x-auto rounded-xl border border-slate-700">
-                <table class="w-full text-left text-sm text-slate-300" id="dataTable">
-                    <thead class="bg-slate-800 text-slate-200 text-xs uppercase font-semibold border-b border-slate-700" id="tableHeader">
+            <div class="overflow-x-auto rounded-xl border border-slate-700/60">
+                <table class="w-full text-left text-xs text-slate-300" id="dataTable">
+                    <thead class="bg-slate-900/90 text-slate-300 font-semibold border-b border-slate-700/80" id="tableHeader">
                         <tr>
-                            <th class="px-6 py-4">Informasi</th>
-                            <th class="px-6 py-4">Status</th>
+                            <th class="px-5 py-3.5">Tanggal</th>
+                            <th class="px-5 py-3.5">Impressions</th>
+                            <th class="px-5 py-3.5">Clicks</th>
+                            <th class="px-5 py-3.5">CTR</th>
+                            <th class="px-5 py-3.5">CPM</th>
+                            <th class="px-5 py-3.5">Pendapatan</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700/60 bg-slate-900/40" id="tableBody">
-                        <tr>
-                            <td colspan="100%" class="text-center py-8 text-slate-500">
-                                Silakan upload file CSV Anda untuk melihat data.
-                            </td>
-                        </tr>
+                    <tbody class="divide-y divide-slate-800 bg-slate-900/40" id="tableBody">
+                        <!-- Populated by JS -->
                     </tbody>
                 </table>
             </div>
@@ -156,28 +216,39 @@
 
     </main>
 
-    <!-- JavaScript Logic -->
     <script>
-        let lineChartInstance = null;
-        let barChartInstance = null;
-        let globalRawData = [];
-
-        // Sample initial data if no file is uploaded yet
-        const demoData = [
-            { Tanggal: '2026-09-01', Start: 1200, Penghasilan: 150000 },
-            { Tanggal: '2026-09-02', Start: 1800, Penghasilan: 230000 },
-            { Tanggal: '2026-09-03', Start: 1500, Penghasilan: 190000 },
-            { Tanggal: '2026-09-04', Start: 2200, Penghasilan: 310000 },
-            { Tanggal: '2026-09-05', Start: 2900, Penghasilan: 450000 },
-            { Tanggal: '2026-09-06', Start: 3100, Penghasilan: 520000 }
+        // Data Default dari file stats (5).csv
+        const defaultCsvData = [
+            { Date: '2026/09/23', Impressions: 857, Clicks: 0, CTR: '0%', CPM: '$0.549', Revenue: '$0.47' },
+            { Date: '2026/09/24', Impressions: 707, Clicks: 0, CTR: '0%', CPM: '$0.508', Revenue: '$0.36' },
+            { Date: '2026/09/25', Impressions: 1921, Clicks: 0, CTR: '0%', CPM: '$0.581', Revenue: '$1.12' },
+            { Date: '2026/09/26', Impressions: 3358, Clicks: 173, CTR: '5.152%', CPM: '$0.387', Revenue: '$1.3' },
+            { Date: '2026/09/27', Impressions: 913, Clicks: 98, CTR: '10.734%', CPM: '$0.361', Revenue: '$0.33' }
         ];
 
+        let currentData = defaultCsvData;
+        let activeCurrency = 'IDR'; // Default ke IDR
+        let currentKurs = 15800;
+
+        let revenueChartInstance = null;
+        let clicksCpmChartInstance = null;
+
         window.onload = () => {
-            // Load Demo Data First
-            processAndRenderData(demoData);
+            initApp();
         };
 
-        // Handle CSV File Upload
+        function initApp() {
+            currentKurs = parseFloat(document.getElementById('kursInput').value) || 15800;
+            processAndRender(currentData);
+        }
+
+        // Listener Kurs Change
+        document.getElementById('kursInput').addEventListener('input', function(e) {
+            currentKurs = parseFloat(e.target.value) || 1;
+            processAndRender(currentData);
+        });
+
+        // Listener File CSV Upload
         document.getElementById('csvFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -185,171 +256,257 @@
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                dynamicTyping: true,
                 complete: function(results) {
                     if (results.data && results.data.length > 0) {
-                        globalRawData = results.data;
-                        processAndRenderData(results.data);
-                    } else {
-                        alert("File CSV kosong atau format tidak sesuai.");
+                        currentData = results.data;
+                        processAndRender(currentData);
                     }
-                },
-                error: function(err) {
-                    alert("Gagal membaca file CSV: " + err.message);
                 }
             });
         });
 
-        // Search Filter Logic
+        // Search Filter Listener
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const query = e.target.value.toLowerCase();
-            if (!globalRawData.length) return;
-
-            const filteredData = globalRawData.filter(row => {
-                return Object.values(row).some(val => 
-                    String(val).toLowerCase().includes(query)
-                );
+            const filtered = currentData.filter(row => {
+                return Object.values(row).some(v => String(v).toLowerCase().includes(query));
             });
-            renderTable(filteredData);
+            renderTable(filtered);
         });
 
-        // Function to process and display data
-        function processAndRenderData(data) {
-            globalRawData = data;
-            const headers = Object.keys(data[0]);
+        function setCurrency(mode) {
+            activeCurrency = mode;
+            const btnIDR = document.getElementById('btnIDR');
+            const btnUSD = document.getElementById('btnUSD');
 
-            // Find column names dynamically (supporting various names for start & income)
-            const incomeCol = headers.find(h => /penghasilan|income|revenue|gaji|pemasukan|amount/i.test(h)) || headers[headers.length - 1];
-            const startCol = headers.find(h => /start|mulai|stats|views|followers|count/i.test(h)) || headers[1] || headers[0];
-            const labelCol = headers.find(h => /tanggal|date|waktu|nama|item|id/i.test(h)) || headers[0];
+            if (mode === 'IDR') {
+                btnIDR.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow";
+                btnUSD.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                document.getElementById('badgeCurrency1').innerText = "IDR (Rp)";
+            } else {
+                btnUSD.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow";
+                btnIDR.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                document.getElementById('badgeCurrency1').innerText = "USD ($)";
+            }
 
-            let totalIncome = 0;
-            let totalStart = 0;
-            let validIncomeCount = 0;
+            processAndRender(currentData);
+        }
 
-            const labels = [];
-            const incomeValues = [];
-            const startValues = [];
+        function formatMoney(amountUsd) {
+            if (activeCurrency === 'IDR') {
+                const idrVal = amountUsd * currentKurs;
+                return 'Rp ' + Math.round(idrVal).toLocaleString('id-ID');
+            } else {
+                return '$' + amountUsd.toFixed(2);
+            }
+        }
+
+        function parseUsd(valStr) {
+            if (typeof valStr === 'number') return valStr;
+            if (!valStr) return 0;
+            return parseFloat(String(valStr).replace(/[^0-9.-]+/g, "")) || 0;
+        }
+
+        function processAndRender(data) {
+            let totalRevUSD = 0;
+            let totalImp = 0;
+            let totalClicks = 0;
+            let cpmSumUSD = 0;
+            let validRows = 0;
+
+            const dates = [];
+            const revenueArr = [];
+            const impressionsArr = [];
+            const clicksArr = [];
+            const ctrArr = [];
+            const cpmArr = [];
 
             data.forEach(row => {
-                const labelVal = row[labelCol] !== undefined ? row[labelCol] : '';
-                let incVal = parseFloat(String(row[incomeCol]).replace(/[^0-9.-]+/g,"")) || 0;
-                let startVal = parseFloat(String(row[startCol]).replace(/[^0-9.-]+/g,"")) || 0;
+                const date = row.Date || row.Tanggal || 'Data';
+                const imp = parseUsd(row.Impressions || row.Views);
+                const clk = parseUsd(row.Clicks || row.Klik);
+                const ctr = parseUsd(row.CTR);
+                const cpmUsd = parseUsd(row.CPM);
+                const revUsd = parseUsd(row.Revenue || row.Penghasilan);
 
-                labels.push(labelVal);
-                incomeValues.push(incVal);
-                startValues.push(startVal);
+                dates.push(date);
+                totalImp += imp;
+                totalClicks += clk;
+                totalRevUSD += revUsd;
+                cpmSumUSD += cpmUsd;
+                validRows++;
 
-                totalIncome += incVal;
-                totalStart += startVal;
-                validIncomeCount++;
+                impressionsArr.push(imp);
+                clicksArr.push(clk);
+                ctrArr.push(ctr);
+                
+                // Conversions for Charts
+                revenueArr.push(activeCurrency === 'IDR' ? revUsd * currentKurs : revUsd);
+                cpmArr.push(activeCurrency === 'IDR' ? cpmUsd * currentKurs : cpmUsd);
             });
 
-            // Update KPI Cards
-            document.getElementById('cardTotalPenghasilan').innerText = formatCurrency(totalIncome);
-            document.getElementById('cardAvgPenghasilan').innerText = formatCurrency(validIncomeCount ? totalIncome / validIncomeCount : 0);
-            document.getElementById('cardStartStats').innerText = totalStart.toLocaleString('id-ID');
-            document.getElementById('cardTotalRows').innerText = data.length.toLocaleString('id-ID');
+            const avgCpmUsd = validRows ? (cpmSumUSD / validRows) : 0;
+            const avgCtr = totalImp ? ((totalClicks / totalImp) * 100) : 0;
 
-            // Render Charts & Table
-            renderCharts(labels, incomeValues, startValues, incomeCol, startCol);
+            // Render Cards
+            document.getElementById('cardTotalRevenue').innerText = formatMoney(totalRevUSD);
+            document.getElementById('subRevenueUsd').innerText = `$${totalRevUSD.toFixed(2)} USD (Kurs: Rp ${currentKurs.toLocaleString('id-ID')})`;
+            
+            document.getElementById('cardAvgCPM').innerText = formatMoney(avgCpmUsd);
+            document.getElementById('subCpmUsd').innerText = `$${avgCpmUsd.toFixed(3)} USD / 1,000 Tayangan`;
+
+            document.getElementById('cardImpressions').innerText = totalImp.toLocaleString('id-ID');
+            document.getElementById('subClicks').innerText = `${totalClicks.toLocaleString('id-ID')} Total Klik (Rata-rata CTR ${avgCtr.toFixed(2)}%)`;
+
+            document.getElementById('cardRecordCount').innerText = `${data.length} Hari`;
+            document.getElementById('subDateRange').innerText = dates.length ? `${dates[0]} - ${dates[dates.length - 1]}` : 'Data Kosong';
+
+            renderCharts(dates, revenueArr, impressionsArr, clicksArr, cpmArr);
             renderTable(data);
         }
 
-        // Format Currency Helper
-        function formatCurrency(val) {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
-        }
+        function renderCharts(labels, revenueData, impressionsData, clicksData, cpmData) {
+            // Chart 1: Revenue vs Impressions
+            const ctx1 = document.getElementById('revenueChart').getContext('2d');
+            if (revenueChartInstance) revenueChartInstance.destroy();
 
-        // Render Charts Function
-        function renderCharts(labels, incomeValues, startValues, incomeLabel, startLabel) {
-            // Line Chart: Penghasilan
-            const ctxLine = document.getElementById('lineChart').getContext('2d');
-            if (lineChartInstance) lineChartInstance.destroy();
+            const gradient1 = ctx1.createLinearGradient(0, 0, 0, 300);
+            gradient1.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+            gradient1.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
 
-            lineChartInstance = new Chart(ctxLine, {
+            revenueChartInstance = new Chart(ctx1, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: incomeLabel,
-                        data: incomeValues,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
+                    datasets: [
+                        {
+                            label: `Pendapatan (${activeCurrency})`,
+                            data: revenueData,
+                            borderColor: '#10b981',
+                            backgroundColor: gradient1,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Impressions',
+                            data: impressionsData,
+                            borderColor: '#818cf8',
+                            borderWidth: 2.5,
+                            borderDash: [5, 5],
+                            pointRadius: 4,
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans' } } }
+                    },
                     scales: {
-                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            ticks: { 
+                                color: '#10b981',
+                                callback: value => activeCurrency === 'IDR' ? 'Rp ' + Math.round(value).toLocaleString('id-ID') : '$' + value
+                            },
+                            grid: { color: '#1e293b' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            ticks: { color: '#818cf8' },
+                            grid: { drawOnChartArea: false }
+                        }
                     }
                 }
             });
 
-            // Bar Chart: Start / Metrics
-            const ctxBar = document.getElementById('barChart').getContext('2d');
-            if (barChartInstance) barChartInstance.destroy();
+            // Chart 2: Clicks & CPM
+            const ctx2 = document.getElementById('clicksCpmChart').getContext('2d');
+            if (clicksCpmChartInstance) clicksCpmChartInstance.destroy();
 
-            barChartInstance = new Chart(ctxBar, {
+            clicksCpmChartInstance = new Chart(ctx2, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: startLabel,
-                        data: startValues,
-                        backgroundColor: '#a855f7',
-                        borderRadius: 6,
-                        hoverBackgroundColor: '#9333ea'
-                    }]
+                    datasets: [
+                        {
+                            label: 'Jumlah Clicks',
+                            data: clicksData,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: `CPM (${activeCurrency})`,
+                            data: cpmData,
+                            type: 'line',
+                            borderColor: '#3b82f6',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#3b82f6',
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans' } } }
+                    },
                     scales: {
-                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                        y: {
+                            position: 'left',
+                            ticks: { color: '#f59e0b' },
+                            grid: { color: '#1e293b' }
+                        },
+                        y1: {
+                            position: 'right',
+                            ticks: { 
+                                color: '#3b82f6',
+                                callback: value => activeCurrency === 'IDR' ? 'Rp ' + Math.round(value).toLocaleString('id-ID') : '$' + value
+                            },
+                            grid: { drawOnChartArea: false }
+                        }
                     }
                 }
             });
         }
 
-        // Render Dynamic Table
         function renderTable(data) {
-            const tableHeader = document.getElementById('tableHeader');
             const tableBody = document.getElementById('tableBody');
-
             if (!data || data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="100%" class="text-center py-6 text-slate-500">Data tidak ditemukan.</td></tr>';
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500">Tidak ada data ditemukan.</td></tr>`;
                 return;
             }
 
-            const headers = Object.keys(data[0]);
-
-            // Header HTML
-            tableHeader.innerHTML = `<tr>` + 
-                headers.map(h => `<th class="px-6 py-4">${h}</th>`).join('') + 
-                `</tr>`;
-
-            // Body HTML
             tableBody.innerHTML = data.map(row => {
-                return `<tr class="hover:bg-slate-800/50 transition">` +
-                    headers.map(h => {
-                        let val = row[h];
-                        if (typeof val === 'number' && /penghasilan|income|revenue|gaji/i.test(h)) {
-                            val = formatCurrency(val);
-                        }
-                        return `<td class="px-6 py-4 whitespace-nowrap">${val !== undefined ? val : '-'}</td>`;
-                    }).join('') +
-                `</tr>`;
+                const date = row.Date || row.Tanggal || '-';
+                const imp = parseUsd(row.Impressions);
+                const clk = parseUsd(row.Clicks);
+                const ctr = row.CTR || '0%';
+                const cpmUsd = parseUsd(row.CPM);
+                const revUsd = parseUsd(row.Revenue);
+
+                return `
+                    <tr class="hover:bg-slate-800/60 transition">
+                        <td class="px-5 py-3.5 font-medium text-white">${date}</td>
+                        <td class="px-5 py-3.5">${imp.toLocaleString('id-ID')}</td>
+                        <td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">${clk}</span></td>
+                        <td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-400 border border-pink-500/20 font-semibold">${ctr}</span></td>
+                        <td class="px-5 py-3.5 text-blue-400 font-semibold">${formatMoney(cpmUsd)}</td>
+                        <td class="px-5 py-3.5 text-emerald-400 font-extrabold">${formatMoney(revUsd)}</td>
+                    </tr>
+                `;
             }).join('');
         }
     </script>
